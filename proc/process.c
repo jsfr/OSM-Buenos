@@ -45,6 +45,11 @@
 #include "vm/vm.h"
 #include "vm/pagepool.h"
 
+//#define MAX_PROCESS_NUMBER 100;
+//uint32_t MAX_PROCESS_NUMBER = 100;
+const int max_process_number = 100;
+uint32_t new_pid = 0;
+process_table_t process_table;
 
 /** @name Process startup
  *
@@ -186,5 +191,39 @@ void process_start(const char *executable)
 
     KERNEL_PANIC("thread_goto_userland failed.");
 }
+
+/* Run process in new thread , returns PID of new process */
+process_id_t process_spawn( const char *executable ) {
+    pcb_t pcb;// = malloc(sizeof(pcb_t)); TODO: skal måske allokere plads?
+    context_t *no_context = NULL;
+    int i;
+    pcb.executable = executable;
+    pcb.state = PROC_NEW;
+    pcb.context = *no_context;
+    pcb.pid = new_pid++;
+    for(i = 0; i < max_process_number; i++) {
+        if(process_table.table[i] == NULL) {
+            process_table.table[i] = &pcb;
+            return pcb.pid;
+        }
+    }
+    KERNEL_PANIC("No more room in process table :'(");
+    return -1;
+}
+
+/* Run process in this thread , only returns if there is an error */
+//int process_run( const char *executable ) ;
+
+//process_id_t process_get_current_process( void ) ;
+
+/* Stop the current process and the kernel thread in which it runs */
+//void process_finish( int retval );
+
+/* Wait for the given process to terminate , returning its return value,
+ * and marking the process table entry as free */
+//uint32_t process_join( process_id_t pid ) ;
+
+/* Initialize process table. Should be called before any other process-related calls */
+//void process_init ( void )
 
 /** @} */
