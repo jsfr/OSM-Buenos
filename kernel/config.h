@@ -37,6 +37,9 @@
 #ifndef BUENOS_CONFIG_H
 #define BUENOS_CONFIG_H
 
+/* Define the maximum number of processes in userland */
+#define CONFIG_MAX_PROCESSES 32
+
 /* Define the maximum number of threads supported by the kernel 
  * Range from 2 (idle + init) to 256 (ASID size)
  */
