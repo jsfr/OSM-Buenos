@@ -40,9 +40,10 @@
 //#include "kernel/thread.h"
 #include "lib/types.h"
 #include "kernel/cswitch.h"
-
+//#include "kernel/thread.h"
 
 typedef enum {
+    PROC_FREE,
     PROC_NEW,
     PROC_READY,
     PROC_RUNNING,
@@ -50,19 +51,14 @@ typedef enum {
     PROC_TERMINATED
 } process_state_t;
 
+typedef int TID_t; //TODO bør nok snarere komme fra en include... DILLER!
 typedef int process_id_t;
 
-typedef struct pcb {
-    const char *executable;
+typedef struct process_table_t {
+    char *executable;
     process_id_t pid;
     process_state_t state;
-    context_t context;
-    //TODO: Add open file and other needed stuff.
-} pcb_t;
-
-typedef struct process_table_t {
-    pcb_t **table;
-    //TODO: add shortcut to currently running process.
+    TID_t thread;
 } process_table_t;
 
 void process_start(const char *executable);

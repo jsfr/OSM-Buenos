@@ -45,11 +45,12 @@
 #include "vm/vm.h"
 #include "vm/pagepool.h"
 
-//#define MAX_PROCESS_NUMBER 100;
-//uint32_t MAX_PROCESS_NUMBER = 100;
-const int max_process_number = 100;
+// Used for process creation
 uint32_t new_pid = 0;
-process_table_t process_table;
+
+process_table_t process_table[CONFIG_MAX_PROCESSES];
+
+semaphore_t process_table_semaphore;
 
 /** @name Process startup
  *
@@ -114,7 +115,7 @@ void process_start(const char *executable)
     for(i = 0; i < CONFIG_USERLAND_STACK_SIZE; i++) {
         phys_page = pagepool_get_phys_page();
         KERNEL_ASSERT(phys_page != 0);
-        vm_map(my_entry->pagetable, phys_page, 
+        vm_map(my_entry->pagetable, phys_page,
                (USERLAND_STACK_TOP & PAGE_SIZE_MASK) - i*PAGE_SIZE, 1);
     }
 
@@ -124,14 +125,14 @@ void process_start(const char *executable)
     for(i = 0; i < (int)elf.ro_pages; i++) {
         phys_page = pagepool_get_phys_page();
         KERNEL_ASSERT(phys_page != 0);
-        vm_map(my_entry->pagetable, phys_page, 
+        vm_map(my_entry->pagetable, phys_page,
                elf.ro_vaddr + i*PAGE_SIZE, 1);
     }
 
     for(i = 0; i < (int)elf.rw_pages; i++) {
         phys_page = pagepool_get_phys_page();
         KERNEL_ASSERT(phys_page != 0);
-        vm_map(my_entry->pagetable, phys_page, 
+        vm_map(my_entry->pagetable, phys_page,
                elf.rw_vaddr + i*PAGE_SIZE, 1);
     }
 
@@ -141,14 +142,14 @@ void process_start(const char *executable)
     intr_status = _interrupt_disable();
     tlb_fill(my_entry->pagetable);
     _interrupt_set_state(intr_status);
-    
+
     /* Now we may use the virtual addresses of the segments. */
 
     /* Zero the pages. */
     memoryset((void *)elf.ro_vaddr, 0, elf.ro_pages*PAGE_SIZE);
     memoryset((void *)elf.rw_vaddr, 0, elf.rw_pages*PAGE_SIZE);
 
-    stack_bottom = (USERLAND_STACK_TOP & PAGE_SIZE_MASK) - 
+    stack_bottom = (USERLAND_STACK_TOP & PAGE_SIZE_MASK) -
         (CONFIG_USERLAND_STACK_SIZE-1)*PAGE_SIZE;
     memoryset((void *)stack_bottom, 0, CONFIG_USERLAND_STACK_SIZE*PAGE_SIZE);
 
@@ -192,7 +193,8 @@ void process_start(const char *executable)
     KERNEL_PANIC("thread_goto_userland failed.");
 }
 
-/* Run process in new thread , returns PID of new process */
+//TODO funktionerne skal være atomiske!!!
+/* Run process in new thread , returns PID of new process *//*
 process_id_t process_spawn( const char *executable ) {
     pcb_t pcb;// = malloc(sizeof(pcb_t)); TODO: skal måske allokere plads?
     context_t *no_context = NULL;
@@ -207,14 +209,24 @@ process_id_t process_spawn( const char *executable ) {
             return pcb.pid;
         }
     }
-    KERNEL_PANIC("No more room in process table :'(");
+    KERNEL_PANIC("No more room in process table :'("); //FIXME do a wait instead
     return -1;
-}
+}*/
 
 /* Run process in this thread , only returns if there is an error */
 //int process_run( const char *executable ) ;
 
-//process_id_t process_get_current_process( void ) ;
+process_id_t process_get_current_process( void ) {
+    semaphore_P(&process_table_semaphore);
+    for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
+        if (process_table[i].state == PROC_RUNNING) {
+            semaphore_V(&process_table_semaphore);
+            return process_table[i].pid;
+        }
+    }
+    semaphore_V(&process_table_semaphore);
+    return (process_id_t) -1;
+}
 
 /* Stop the current process and the kernel thread in which it runs */
 //void process_finish( int retval );
@@ -224,6 +236,14 @@ process_id_t process_spawn( const char *executable ) {
 //uint32_t process_join( process_id_t pid ) ;
 
 /* Initialize process table. Should be called before any other process-related calls */
-//void process_init ( void )
-
+//TODO add to main
+void process_init ( void ) {
+    for (int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
+        process_table[i].executable = "nil";
+        process_table[i].pid        = -1;
+        process_table[i].state      = PROC_FREE;
+        process_table[i].thread     = -1;
+    }
+    process_table_semaphore = *semaphore_create(1);
+}
 /** @} */
