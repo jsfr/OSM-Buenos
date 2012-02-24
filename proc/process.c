@@ -217,7 +217,7 @@ process_id_t process_get_current_process( void ) {
 /* Stop the current process and the kernel thread in which it runs */
 void process_finish( int retval ) {
     semaphore_P(&process_table_semaphore);
-    for(int i = 0; i < CONFIG_MAX PROCESSES; i++) {
+    for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
         if (process_table[i].state == PROC_RUNNING) {
             process_table[i].state  = PROC_TERMINATED;
             process_table[i].thread = -1;
@@ -236,7 +236,7 @@ uint32_t process_join( process_id_t pid ) {
     semaphore_P(&process_table_semaphore);
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
         if (process_table[i].pid == pid) {
-            while (true) {
+            while (1) {
                 if(process_table[i].state == PROC_TERMINATED) {
                     uint32_t retval = process_table[i].retval;
                     process_table[i].executable = "nil";
