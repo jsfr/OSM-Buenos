@@ -44,7 +44,6 @@
 
 typedef enum {
     PROC_FREE,
-    PROC_NEW,
     PROC_READY,
     PROC_RUNNING,
     PROC_WAITING,
@@ -59,6 +58,8 @@ typedef struct process_table_t {
     process_id_t pid;
     process_state_t state;
     TID_t thread;
+    process_id_t parent;
+    int retval;
 } process_table_t;
 
 void process_start(const char *executable);

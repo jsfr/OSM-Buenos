@@ -62,7 +62,17 @@ void syscall_handle(context_t *user_context)
     case SYSCALL_HALT:
         halt_kernel();
         break;
-    default: 
+    case SYSCALL_EXEC:
+        break;
+    case SYSCALL_EXIT:
+        break;
+    case SYSCALL_JOIN:
+        break;
+    case SYSCALL_READ:
+        break;
+    case SYSCALL_WRITE:
+        break;
+    default:
         KERNEL_PANIC("Unhandled system call\n");
     }
 
