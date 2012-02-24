@@ -198,9 +198,25 @@ void process_start(const char *executable)
 
 /* Run process in new thread , returns PID of new process */
 //process_id_t process_spawn( const char *executable );
+//FIXME DEN HER FUUCKING MANGLER!!!!!
 
 /* Run process in this thread , only returns if there is an error */
-//int process_run( const char *executable ) ;
+int process_run( const char *executable ) {
+    semaphore_P(&process_table_semaphore);
+    for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
+        if (process_table[i].state == PROC_FREE) {
+            process_table[i].executable = executable;
+            process_table[i].pid        = new_pid++;
+            process_table[i].state      = PROC_READY;
+            process_table[i].thread     = thread_get_current_thread();
+            process_table[i].parent     = -1; //TODO how to set the parent thread?
+            process_table[i].retval     = -1;
+            semaphore_V(&process_table_semaphore);
+            process_start(executable);
+        }
+    }
+    return -1;
+}
 
 process_id_t process_get_current_process( void ) {
     semaphore_P(&process_table_semaphore);
@@ -222,7 +238,6 @@ void process_finish( int retval ) {
             process_table[i].state  = PROC_TERMINATED;
             process_table[i].thread = -1;
             process_table[i].retval = retval;
-            thread_finish();
             semaphore_V(&process_table_semaphore);
             sleepq_wake(&process_table[i]);
             return;

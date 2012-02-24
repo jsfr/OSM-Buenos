@@ -54,7 +54,7 @@ typedef int TID_t; //TODO bør nok snarere komme fra en include... DILLER!
 typedef int process_id_t;
 
 typedef struct process_table_t {
-    char *executable;
+    const char *executable;
     process_id_t pid;
     process_state_t state;
     TID_t thread;

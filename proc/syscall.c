@@ -39,6 +39,9 @@
 #include "kernel/panic.h"
 #include "lib/libc.h"
 #include "kernel/assert.h"
+#include "proc/process.h"
+#include "vm/vm.h"
+#include "kernel/thread.h"
 
 /**
  * Handle system calls. Interrupts are enabled when this function is
@@ -63,10 +66,18 @@ void syscall_handle(context_t *user_context)
         halt_kernel();
         break;
     case SYSCALL_EXEC:
+        //int pid = process_spawn(user_context->cpu_regs[MIPS_REGISTER_A1]);
+        //TODO analyse pid and return either 0 or -1
         break;
     case SYSCALL_EXIT:
+        process_finish(user_context->cpu_regs[MIPS_REGISTER_A1]);
+        //vm_destroy_pagetable(thr->pagetable);
+        //thr->pagetable = NULL;
+        //FIXME the above is missing o.0!!!
+        thread_finish();
         break;
-    case SYSCALL_JOIN:
+    case SYSCALL_JOIN: //TODO throw error in process.c (process_join)
+        user_context->cpu_regs[MIPS_REGISTER_V0] = process_join(user_context->cpu_regs[MIPS_REGISTER_A1]);
         break;
     case SYSCALL_READ:
         break;
