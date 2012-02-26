@@ -194,20 +194,35 @@ void process_start(const char *executable)
 }
 
 /* Run process in new thread , returns PID of new process */
+<<<<<<< HEAD
 //process_id_t process_spawn( const char *executable ) {
     
 //}
+=======
+//process_id_t process_spawn( const char *executable );
+//FIXME DEN HER FUUCKING MANGLER!!!!!
+>>>>>>> 108342e61fb1bc180868a18ee35273ab0615df35
 
 /* Run process in this thread , only returns if there is an error */
 int process_run( const char *executable ) {
     semaphore_P(&process_table_semaphore);
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
+<<<<<<< HEAD
         if (process_table.table[i].state == PROC_FREE) {
             process_table.table[i].executable = executable;
             process_table.table[i].pid        = process_table.new_pid++;
             process_table.table[i].state      = PROC_READY;
 //            process_table.table[i].thread     = thread_get_current_thread();
             process_table.table[i].retval     = -1;
+=======
+        if (process_table[i].state == PROC_FREE) {
+            process_table[i].executable = executable;
+            process_table[i].pid        = new_pid++;
+            process_table[i].state      = PROC_READY;
+            process_table[i].thread     = thread_get_current_thread();
+            process_table[i].parent     = -1; //TODO how to set the parent thread?
+            process_table[i].retval     = -1;
+>>>>>>> 108342e61fb1bc180868a18ee35273ab0615df35
             semaphore_V(&process_table_semaphore);
             process_start(executable);
         }
@@ -231,10 +246,17 @@ process_id_t process_get_current_process( void ) {
 void process_finish( int retval ) {
     semaphore_P(&process_table_semaphore);
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
+<<<<<<< HEAD
         if (process_table.table[i].state == PROC_RUNNING) {
             process_table.table[i].state  = PROC_TERMINATED;
 //            process_table.table[i].thread = -1;
             process_table.table[i].retval = retval;
+=======
+        if (process_table[i].state == PROC_RUNNING) {
+            process_table[i].state  = PROC_TERMINATED;
+            process_table[i].thread = -1;
+            process_table[i].retval = retval;
+>>>>>>> 108342e61fb1bc180868a18ee35273ab0615df35
             semaphore_V(&process_table_semaphore);
             sleepq_wake(&process_table.table[i]);
             return;
