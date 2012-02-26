@@ -42,6 +42,8 @@
 #include "proc/process.h"
 #include "vm/vm.h"
 #include "kernel/thread.h"
+#include "drivers/device.h"
+#include "drivers/gcd.h"
 
 /**
  * Handle system calls. Interrupts are enabled when this function is
@@ -61,19 +63,28 @@ void syscall_handle(context_t *user_context)
      * returning from this function the userland context will be
      * restored from user_context.
      */
+    thread_table_t *thr;
+    process_id_t pid;
+    device_t *dev;
+    gcd_t *gcd;
+    char buffer[user_context->cpu_regs[MIPS_REGISTER_A3] + 1];
+//    char buffer2[64];
+    int len;
+
+
     switch(user_context->cpu_regs[MIPS_REGISTER_A0]) {
     case SYSCALL_HALT:
         halt_kernel();
         break;
     case SYSCALL_EXEC:
-        //int pid = process_spawn(user_context->cpu_regs[MIPS_REGISTER_A1]);
-        //TODO analyse pid and return either 0 or -1
+        pid = process_spawn((char*)user_context->cpu_regs[MIPS_REGISTER_A1]);
+        if (pid < 0) KERNEL_PANIC("Out of processes\n");
         break;
     case SYSCALL_EXIT:
+        thr = thread_get_current_thread_entry();
         process_finish(user_context->cpu_regs[MIPS_REGISTER_A1]);
-        //vm_destroy_pagetable(thr->pagetable);
-        //thr->pagetable = NULL;
-        //FIXME the above is missing o.0!!!
+        vm_destroy_pagetable(thr->pagetable);
+        thr->pagetable = NULL;
         thread_finish();
         break;
     case SYSCALL_JOIN: //TODO throw error in process.c (process_join)
@@ -82,6 +93,13 @@ void syscall_handle(context_t *user_context)
     case SYSCALL_READ:
         break;
     case SYSCALL_WRITE:
+        /* Find system console (first tty) */
+        dev = device_get(YAMS_TYPECODE_TTY, 0);
+        KERNEL_ASSERT(dev != NULL);
+        gcd = (gcd_t *)dev->generic_device;
+        KERNEL_ASSERT(gcd != NULL);
+        len = snprintf(buffer, user_context->cpu_regs[MIPS_REGISTER_A3], (char*)user_context->cpu_regs[MIPS_REGISTER_A2]);
+        gcd->write(gcd, buffer, len);
         break;
     default:
         KERNEL_PANIC("Unhandled system call\n");

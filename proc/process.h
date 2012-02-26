@@ -55,7 +55,7 @@ typedef struct process_t {
     const char *executable;
     process_id_t pid;
     process_state_t state;
-//    TID_t thread;
+    process_id_t parent;
     int retval;
 } process_t;
 
@@ -64,7 +64,7 @@ typedef struct process_table_t {
     uint32_t new_pid;
 } process_table_t;
 
-void process_start(const char *executable);
+void process_start(uint32_t exec);//const char *executable);
 
 /* Run process in new thread , returns PID of new process */
 process_id_t process_spawn( const char *executable );

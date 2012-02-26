@@ -132,7 +132,7 @@ void init_startup_thread(uint32_t arg)
 
     kprintf("Starting initial program '%s'\n", bootargs_get("initprog"));
 
-    process_start(bootargs_get("initprog"));
+    process_start((uint32_t)bootargs_get("initprog"));
 
     /* The current process_start() should never return. */
     KERNEL_PANIC("Run out of initprog.\n");
@@ -201,6 +201,9 @@ void init(void)
 
     kwrite("Initializing semaphores\n");
     semaphore_init();
+
+    kwrite("Initializing process system\n");
+    process_init();
 
     kwrite("Initializing device drivers\n");
     device_init();

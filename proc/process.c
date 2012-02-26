@@ -69,8 +69,10 @@ semaphore_t process_table_semaphore;
  * @executable The name of the executable to be run in the userland
  * process
  */
-void process_start(const char *executable)
+//void process_start(const char *executable)
+void process_start(uint32_t exec)
 {
+    const char *executable = (char*) exec;
     thread_table_t *my_entry;
     pagetable_t *pagetable;
     uint32_t phys_page;
@@ -194,9 +196,24 @@ void process_start(const char *executable)
 }
 
 /* Run process in new thread , returns PID of new process */
-//process_id_t process_spawn( const char *executable ) {
-    
-//}
+process_id_t process_spawn( const char *executable ) {
+    semaphore_P(&process_table_semaphore);
+    TID_t thr;
+    for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
+        if (process_table.table[i].state == PROC_FREE) {
+            process_table.table[i].executable = executable;
+            process_table.table[i].pid        = process_table.new_pid++;
+            process_table.table[i].state      = PROC_READY;
+            process_table.table[i].retval     = -1;
+            process_table.table[i].parent     = process_get_current_process();
+            semaphore_V(&process_table_semaphore);
+            thr = thread_create(&process_start, (uint32_t)executable);
+            thread_run(thr);
+            return process_table.table[i].pid;
+        }
+    }
+    return -1;
+}
 
 /* Run process in this thread , only returns if there is an error */
 int process_run( const char *executable ) {
@@ -206,10 +223,10 @@ int process_run( const char *executable ) {
             process_table.table[i].executable = executable;
             process_table.table[i].pid        = process_table.new_pid++;
             process_table.table[i].state      = PROC_READY;
-//            process_table.table[i].thread     = thread_get_current_thread();
             process_table.table[i].retval     = -1;
+            process_table.table[i].parent     = -1;
             semaphore_V(&process_table_semaphore);
-            process_start(executable);
+            process_start((uint32_t)executable);
         }
     }
     return -1;
@@ -224,7 +241,7 @@ process_id_t process_get_current_process( void ) {
         }
     }
     semaphore_V(&process_table_semaphore);
-    return (process_id_t) -1;
+    return -1;
 }
 
 /* Stop the current process and the kernel thread in which it runs */
@@ -233,7 +250,6 @@ void process_finish( int retval ) {
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
         if (process_table.table[i].state == PROC_RUNNING) {
             process_table.table[i].state  = PROC_TERMINATED;
-//            process_table.table[i].thread = -1;
             process_table.table[i].retval = retval;
             semaphore_V(&process_table_semaphore);
             sleepq_wake(&process_table.table[i]);
@@ -254,8 +270,8 @@ uint32_t process_join( process_id_t pid ) {
                     process_table.table[i].executable = "nil";
                     process_table.table[i].pid        = -1;
                     process_table.table[i].state      = PROC_FREE;
-//                    process_table.table[i].thread     = -1;
                     process_table.table[i].retval     = -1;
+                    process_table.table[i].parent     = -1;
                     semaphore_V(&process_table_semaphore);
                     return retval;
                 } else {
@@ -267,19 +283,19 @@ uint32_t process_join( process_id_t pid ) {
         }
     }
     semaphore_V(&process_table_semaphore);
-    return 0; //TODO WHAT TO DO WHEN NO PID IS FOUND OMFOMFOMFOFMFG??!?!??!?! XAXAXAXAAXAX
+    return 0;
 }
 
 /* Initialize process table. Should be called before any other process-related calls */
-//TODO add to main
 void process_init ( void ) {
     for (int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
         process_table.table[i].executable = "nil";
         process_table.table[i].pid        = -1;
         process_table.table[i].state      = PROC_FREE;
-//        process_table.table[i].thread     = -1;
         process_table.table[i].retval     = -1;
     }
-    process_table_semaphore = *semaphore_create(1);
+    // intitialized to 1 since we use 0 as an error-code for process_join
+    process_table.new_pid                 = 1;
+    process_table_semaphore               = *semaphore_create(1);
 }
 /** @} */
