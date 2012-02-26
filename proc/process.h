@@ -37,10 +37,9 @@
 #ifndef BUENOS_PROC_PROCESS
 #define BUENOS_PROC_PROCESS
 
-//#include "kernel/thread.h"
 #include "lib/types.h"
 #include "kernel/cswitch.h"
-//#include "kernel/thread.h"
+#include "kernel/config.h"
 
 typedef enum {
     PROC_FREE,
@@ -50,16 +49,19 @@ typedef enum {
     PROC_TERMINATED
 } process_state_t;
 
-typedef int TID_t; //TODO bør nok snarere komme fra en include... DILLER!
 typedef int process_id_t;
 
-typedef struct process_table_t {
-    char *executable;
+typedef struct process_t {
+    const char *executable;
     process_id_t pid;
     process_state_t state;
-    TID_t thread;
-    process_id_t parent;
+//    TID_t thread;
     int retval;
+} process_t;
+
+typedef struct process_table_t {
+    process_t table[CONFIG_MAX_PROCESSES];
+    uint32_t new_pid;
 } process_table_t;
 
 void process_start(const char *executable);

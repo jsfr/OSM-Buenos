@@ -46,11 +46,8 @@
 #include "vm/pagepool.h"
 #include "kernel/sleepq.h"
 
-// Used for process creation
-uint32_t new_pid = 0;
-
 // The process table holds every process
-process_table_t process_table[CONFIG_MAX_PROCESSES];
+process_table_t process_table;
 
 // Semaphore used for ensuring atomicity in the process functions
 semaphore_t process_table_semaphore;
@@ -197,17 +194,33 @@ void process_start(const char *executable)
 }
 
 /* Run process in new thread , returns PID of new process */
-//process_id_t process_spawn( const char *executable );
+//process_id_t process_spawn( const char *executable ) {
+    
+//}
 
 /* Run process in this thread , only returns if there is an error */
-//int process_run( const char *executable ) ;
+int process_run( const char *executable ) {
+    semaphore_P(&process_table_semaphore);
+    for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
+        if (process_table.table[i].state == PROC_FREE) {
+            process_table.table[i].executable = executable;
+            process_table.table[i].pid        = process_table.new_pid++;
+            process_table.table[i].state      = PROC_READY;
+//            process_table.table[i].thread     = thread_get_current_thread();
+            process_table.table[i].retval     = -1;
+            semaphore_V(&process_table_semaphore);
+            process_start(executable);
+        }
+    }
+    return -1;
+}
 
 process_id_t process_get_current_process( void ) {
     semaphore_P(&process_table_semaphore);
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
-        if (process_table[i].state == PROC_RUNNING) {
+        if (process_table.table[i].state == PROC_RUNNING) {
             semaphore_V(&process_table_semaphore);
-            return process_table[i].pid;
+            return process_table.table[i].pid;
         }
     }
     semaphore_V(&process_table_semaphore);
@@ -218,13 +231,12 @@ process_id_t process_get_current_process( void ) {
 void process_finish( int retval ) {
     semaphore_P(&process_table_semaphore);
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
-        if (process_table[i].state == PROC_RUNNING) {
-            process_table[i].state  = PROC_TERMINATED;
-            process_table[i].thread = -1;
-            process_table[i].retval = retval;
-            thread_finish();
+        if (process_table.table[i].state == PROC_RUNNING) {
+            process_table.table[i].state  = PROC_TERMINATED;
+//            process_table.table[i].thread = -1;
+            process_table.table[i].retval = retval;
             semaphore_V(&process_table_semaphore);
-            sleepq_wake(&process_table[i]);
+            sleepq_wake(&process_table.table[i]);
             return;
         }
     }
@@ -235,21 +247,20 @@ void process_finish( int retval ) {
 uint32_t process_join( process_id_t pid ) {
     semaphore_P(&process_table_semaphore);
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
-        if (process_table[i].pid == pid) {
+        if (process_table.table[i].pid == pid) {
             while (1) {
-                if(process_table[i].state == PROC_TERMINATED) {
-                    uint32_t retval = process_table[i].retval;
-                    process_table[i].executable = "nil";
-                    process_table[i].pid        = -1;
-                    process_table[i].state      = PROC_FREE;
-                    process_table[i].thread     = -1;
-                    process_table[i].parent     = -1;
-                    process_table[i].retval     = -1;
+                if(process_table.table[i].state == PROC_TERMINATED) {
+                    uint32_t retval = process_table.table[i].retval;
+                    process_table.table[i].executable = "nil";
+                    process_table.table[i].pid        = -1;
+                    process_table.table[i].state      = PROC_FREE;
+//                    process_table.table[i].thread     = -1;
+                    process_table.table[i].retval     = -1;
                     semaphore_V(&process_table_semaphore);
                     return retval;
                 } else {
                     semaphore_V(&process_table_semaphore);
-                    sleepq_add(&process_table[i]);
+                    sleepq_add(&process_table.table[i]);
                     semaphore_P(&process_table_semaphore);
                 }
             }
@@ -263,12 +274,11 @@ uint32_t process_join( process_id_t pid ) {
 //TODO add to main
 void process_init ( void ) {
     for (int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
-        process_table[i].executable = "nil";
-        process_table[i].pid        = -1;
-        process_table[i].state      = PROC_FREE;
-        process_table[i].thread     = -1;
-        process_table[i].parent     = -1;
-        process_table[i].retval     = -1;
+        process_table.table[i].executable = "nil";
+        process_table.table[i].pid        = -1;
+        process_table.table[i].state      = PROC_FREE;
+//        process_table.table[i].thread     = -1;
+        process_table.table[i].retval     = -1;
     }
     process_table_semaphore = *semaphore_create(1);
 }
