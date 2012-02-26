@@ -51,11 +51,7 @@ typedef enum {
 
 typedef int process_id_t;
 
-<<<<<<< HEAD
 typedef struct process_t {
-=======
-typedef struct process_table_t {
->>>>>>> 108342e61fb1bc180868a18ee35273ab0615df35
     const char *executable;
     process_id_t pid;
     process_state_t state;
