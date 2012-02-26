@@ -1,0 +1,2 @@
+To run the halt program on the harddisk run yams-sim with the following argument:
+initprog=[fyamsHDD]halt
