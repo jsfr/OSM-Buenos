@@ -45,7 +45,6 @@ typedef enum {
     PROC_FREE,
     PROC_READY,
     PROC_RUNNING,
-    PROC_WAITING,
     PROC_TERMINATED
 } process_state_t;
 

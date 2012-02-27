@@ -190,6 +190,14 @@ void process_start(uint32_t exec)
     user_context.cpu_regs[MIPS_REGISTER_SP] = USERLAND_STACK_TOP;
     user_context.pc = elf.entry_point;
 
+    /* Add the pid to the thread */
+    for (int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
+        if (process_table.table[i].executable == executable) {
+            my_entry->process_id = process_table.table[i].pid;
+            break;
+        }
+    }
+
     thread_goto_userland(&user_context);
 
     KERNEL_PANIC("thread_goto_userland failed.");
@@ -233,7 +241,9 @@ int process_run( const char *executable ) {
 }
 
 process_id_t process_get_current_process( void ) {
-    semaphore_P(&process_table_semaphore);
+    //semaphore_P(&process_table_semaphore);
+    return thread_get_current_thread_entry()->process_id;
+    /*
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
         if (process_table.table[i].state == PROC_RUNNING) {
             semaphore_V(&process_table_semaphore);
@@ -241,14 +251,15 @@ process_id_t process_get_current_process( void ) {
         }
     }
     semaphore_V(&process_table_semaphore);
-    return -1;
+    return -1;*/
 }
 
 /* Stop the current process and the kernel thread in which it runs */
 void process_finish( int retval ) {
+    process_id_t pid = thread_get_current_thread_entry()->process_id;
     semaphore_P(&process_table_semaphore);
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
-        if (process_table.table[i].state == PROC_RUNNING) {
+        if (process_table.table[i].pid == pid) {
             process_table.table[i].state  = PROC_TERMINATED;
             process_table.table[i].retval = retval;
             semaphore_V(&process_table_semaphore);
@@ -256,6 +267,7 @@ void process_finish( int retval ) {
             return;
         }
     }
+    semaphore_V(&process_table_semaphore);
 }
 
 /* Wait for the given process to terminate , returning its return value,

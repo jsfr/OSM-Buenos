@@ -68,7 +68,6 @@ void syscall_handle(context_t *user_context)
     device_t *dev;
     gcd_t *gcd;
     char buffer[user_context->cpu_regs[MIPS_REGISTER_A3] + 1];
-//    char buffer2[64];
     int len;
 
 
@@ -87,10 +86,14 @@ void syscall_handle(context_t *user_context)
         thr->pagetable = NULL;
         thread_finish();
         break;
-    case SYSCALL_JOIN: //TODO throw error in process.c (process_join)
+    case SYSCALL_JOIN:
         user_context->cpu_regs[MIPS_REGISTER_V0] = process_join(user_context->cpu_regs[MIPS_REGISTER_A1]);
         break;
     case SYSCALL_READ:
+        dev = device_get(YAMS_TYPECODE_TTY, 0);
+        KERNEL_ASSERT(dev != NULL);
+        gcd = (gcd_t*)dev->generic_device;
+        KERNEL_ASSERT(gcd != NULL);
         break;
     case SYSCALL_WRITE:
         /* Find system console (first tty) */
