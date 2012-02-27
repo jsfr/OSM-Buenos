@@ -94,12 +94,17 @@ void syscall_handle(context_t *user_context)
         break;
     case SYSCALL_WRITE:
         /* Find system console (first tty) */
+        kwrite("getting device\n");
         dev = device_get(YAMS_TYPECODE_TTY, 0);
         KERNEL_ASSERT(dev != NULL);
+        kwrite("Getting generic device\n");
         gcd = (gcd_t *)dev->generic_device;
         KERNEL_ASSERT(gcd != NULL);
+        kwrite("Calling snprintf\n");
         len = snprintf(buffer, user_context->cpu_regs[MIPS_REGISTER_A3], (char*)user_context->cpu_regs[MIPS_REGISTER_A2]);
+        kwrite("Writing!\n");
         gcd->write(gcd, buffer, len);
+        kwrite("Breaking!\n");
         break;
     default:
         KERNEL_PANIC("Unhandled system call\n");
