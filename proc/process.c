@@ -241,17 +241,7 @@ int process_run( const char *executable ) {
 }
 
 process_id_t process_get_current_process( void ) {
-    //semaphore_P(&process_table_semaphore);
     return thread_get_current_thread_entry()->process_id;
-    /*
-    for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
-        if (process_table.table[i].state == PROC_RUNNING) {
-            semaphore_V(&process_table_semaphore);
-            return process_table.table[i].pid;
-        }
-    }
-    semaphore_V(&process_table_semaphore);
-    return -1;*/
 }
 
 /* Stop the current process and the kernel thread in which it runs */
@@ -273,6 +263,9 @@ void process_finish( int retval ) {
 /* Wait for the given process to terminate , returning its return value,
  * and marking the process table entry as free */
 uint32_t process_join( process_id_t pid ) {
+
+    interrupt_status_t intr_status;
+
     semaphore_P(&process_table_semaphore);
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
         if (process_table.table[i].pid == pid) {
@@ -288,7 +281,10 @@ uint32_t process_join( process_id_t pid ) {
                     return retval;
                 } else {
                     semaphore_V(&process_table_semaphore);
+                    intr_status = _interrupt_disable();
                     sleepq_add(&process_table.table[i]);
+                    _interrupt_set_state(intr_status);
+                    thread_switch();
                     semaphore_P(&process_table_semaphore);
                 }
             }
