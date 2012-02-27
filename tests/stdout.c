@@ -6,6 +6,8 @@ int main(void)
     //mystr = "Martin likes\n";
 
     puts("Martin likes this TTY!\n");
+    syscall_halt();
+
 
     return 0;
 }
