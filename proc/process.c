@@ -211,7 +211,7 @@ process_id_t process_spawn( const char *executable ) {
         if (process_table.table[i].state == PROC_FREE) {
             process_table.table[i].executable = executable;
             process_table.table[i].pid        = process_table.new_pid++;
-            process_table.table[i].state      = PROC_READY;
+            process_table.table[i].state      = PROC_RUNNING;
             process_table.table[i].retval     = -1;
             process_table.table[i].parent     = process_get_current_process();
             semaphore_V(&process_table_semaphore);
@@ -230,7 +230,7 @@ int process_run( const char *executable ) {
         if (process_table.table[i].state == PROC_FREE) {
             process_table.table[i].executable = executable;
             process_table.table[i].pid        = process_table.new_pid++;
-            process_table.table[i].state      = PROC_READY;
+            process_table.table[i].state      = PROC_RUNNING;
             process_table.table[i].retval     = -1;
             process_table.table[i].parent     = -1;
             semaphore_V(&process_table_semaphore);
@@ -305,6 +305,7 @@ void process_init ( void ) {
         process_table.table[i].pid        = -1;
         process_table.table[i].state      = PROC_FREE;
         process_table.table[i].retval     = -1;
+        process_table.table[i].parent     = -1;
     }
     // intitialized to 1 since we use 0 as an error-code for process_join
     process_table.new_pid                 = 1;
