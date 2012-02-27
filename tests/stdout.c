@@ -2,10 +2,10 @@
 
 int main(void)
 {
-    //char *mystr;
-    //mystr = "Martin likes\n";
-
-    puts("Martin likes this TTY!\n");
+    char buffer[100];
+    puts("Martin likes this TTY!\n\n\n");
+    readline(buffer, 100);
+    printf("[%d] = %s\n",strlen(buffer),buffer);
     syscall_halt();
 
 
