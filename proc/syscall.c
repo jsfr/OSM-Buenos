@@ -67,18 +67,21 @@ void syscall_handle(context_t *user_context)
     process_id_t pid;
     device_t *dev;
     gcd_t *gcd;
-    char buffer[user_context->cpu_regs[MIPS_REGISTER_A3] + 1];
-    int len;
+    char *wbuffer, *rbuffer;
+    int wlen, rlen, rlen2;
 
 
     switch(user_context->cpu_regs[MIPS_REGISTER_A0]) {
     case SYSCALL_HALT:
         halt_kernel();
         break;
+
     case SYSCALL_EXEC:
         pid = process_spawn((char*)user_context->cpu_regs[MIPS_REGISTER_A1]);
         if (pid < 0) KERNEL_PANIC("Out of processes\n");
+        user_context->cpu_regs[MIPS_REGISTER_V0] = pid;
         break;
+
     case SYSCALL_EXIT:
         thr = thread_get_current_thread_entry();
         process_finish(user_context->cpu_regs[MIPS_REGISTER_A1]);
@@ -86,28 +89,36 @@ void syscall_handle(context_t *user_context)
         thr->pagetable = NULL;
         thread_finish();
         break;
+
     case SYSCALL_JOIN:
         user_context->cpu_regs[MIPS_REGISTER_V0] = process_join(user_context->cpu_regs[MIPS_REGISTER_A1]);
         break;
+
     case SYSCALL_READ:
         dev = device_get(YAMS_TYPECODE_TTY, 0);
         KERNEL_ASSERT(dev != NULL);
         gcd = (gcd_t*)dev->generic_device;
         KERNEL_ASSERT(gcd != NULL);
+
+        rlen = user_context->cpu_regs[MIPS_REGISTER_A3];
+        rbuffer = (char*) user_context->cpu_regs[MIPS_REGISTER_A2];
+        rlen2 = gcd->read(gcd,rbuffer,rlen);
+
+        KERNEL_ASSERT(rlen2 >= 0);
+        rbuffer[rlen2 + 1] = '\0';
+        user_context->cpu_regs[MIPS_REGISTER_V0] = rlen2;
         break;
+
     case SYSCALL_WRITE:
         /* Find system console (first tty) */
-        kwrite("getting device\n");
         dev = device_get(YAMS_TYPECODE_TTY, 0);
-        KERNEL_ASSERT(dev != NULL);
-        kwrite("Getting generic device\n");
         gcd = (gcd_t *)dev->generic_device;
         KERNEL_ASSERT(gcd != NULL);
-        kwrite("Calling snprintf\n");
-        len = snprintf(buffer, user_context->cpu_regs[MIPS_REGISTER_A3], (char*)user_context->cpu_regs[MIPS_REGISTER_A2]);
-        kwrite("Writing!\n");
-        gcd->write(gcd, buffer, len);
-        kwrite("Breaking!\n");
+        
+        wbuffer = (char*) user_context->cpu_regs[MIPS_REGISTER_A2];
+        wlen = user_context->cpu_regs[MIPS_REGISTER_A3];
+        gcd->write(gcd, wbuffer, wlen);
+        user_context->cpu_regs[MIPS_REGISTER_V0] = wlen;
         break;
     default:
         KERNEL_PANIC("Unhandled system call\n");
