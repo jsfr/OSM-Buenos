@@ -297,7 +297,7 @@ uint32_t process_join( process_id_t pid ) {
 /* Initialize process table. Should be called before any other process-related calls */
 void process_init ( void ) {
     for (int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
-        process_table.table[i].executable = "nil";
+        process_table.table[i].executable = NULL;
         process_table.table[i].pid        = -1;
         process_table.table[i].state      = PROC_FREE;
         process_table.table[i].retval     = -1;
