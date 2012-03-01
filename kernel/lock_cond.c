@@ -4,24 +4,23 @@
 #include "kernel/config.h"
 
 /* Initialize an already allocated lock t structure such that it can be acquired 
- * and released afterwards. The function should return 0 on success and a 
+ * and released afterwards. The function should return 0 on success and a
  * negative number on failure. */
 int lock_reset(lock_t *lock) {
-    
     interrupt_status_t intr_status;
     int val;
-    
+
     intr_status = _interrupt_disable();
     spinlock_acquire(&lock->slock);
-    
+
     lock->tid = -1;
-    
+
     if((lock->taken = 0) == 0) {
         val = 0;
     } else {
         val = -1;
     }
-    
+
     spinlock_release(&lock->slock);
     _interrupt_set_state(intr_status);
 
@@ -35,9 +34,9 @@ void lock_acquire(lock_t *lock) {
     while (1) {
         intr_status = _interrupt_disable();
         spinlock_acquire(&lock->slock);
-        
+
         if (lock->taken == 0) break;
-        
+
         sleepq_add(lock);
         spinlock_release(&lock->slock);
         _interrupt_set_state(intr_status);
@@ -53,12 +52,12 @@ void lock_acquire(lock_t *lock) {
 /* Releases the lock. */
 void lock_release(lock_t *lock) {
     interrupt_status_t intr_status;
-    
+
     intr_status = _interrupt_disable();
     spinlock_acquire(&lock->slock);
-    
+
     if (thread_get_current_thread() == lock->tid) lock->taken = 0;
-    
+
     spinlock_release(&lock->slock);
     _interrupt_set_state(intr_status);
 }

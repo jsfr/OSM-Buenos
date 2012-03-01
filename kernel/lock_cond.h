@@ -11,7 +11,7 @@ typedef struct lock_t {
     TID_t tid;
     int taken;
     spinlock_t slock;
-    // TODO Me... 
+    // TODO Me...
 } lock_t;
 
 typedef struct cond_t {
@@ -19,7 +19,7 @@ typedef struct cond_t {
 } cond_t;
 
 /* Initialize an already allocated lock t structure such that it can be acquired 
- * and released afterwards. The function should return 0 on success and a 
+ * and released afterwards. The function should return 0 on success and a
  * negative number on failure. */
 int lock_reset(lock_t *lock);
 
