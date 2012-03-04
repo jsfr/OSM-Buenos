@@ -67,7 +67,7 @@ void lock_release(lock_t *lock) {
 
 /* Init a condition  */
 void condition_init(cond_t *cond) {
-    cond->initialized = 0;
+    *cond = 0;
 }
 /* Wait until condition is true, based on a lock. It is assumed, that the lock
  * has been acquired, and that interrupts have been disabled. */
