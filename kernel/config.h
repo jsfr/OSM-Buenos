@@ -37,6 +37,9 @@
 #ifndef BUENOS_CONFIG_H
 #define BUENOS_CONFIG_H
 
+/* The maximum length of the name of a process */
+#define CONFIG_MAX_PROCESS_NAME 64
+
 /* Define the maximum number of processes in userland */
 #define CONFIG_MAX_PROCESSES 32
 
