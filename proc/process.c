@@ -70,9 +70,17 @@ semaphore_t process_table_semaphore;
  * process
  */
 //void process_start(const char *executable)
-void process_start(uint32_t exec)
+void process_start(uint32_t pid_int)
 {
-    const char *executable = (char*) exec;
+    process_id_t pid = pid_int;
+    const char *executable = NULL;
+
+    for (int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
+        if(process_table.table[i].pid == pid) {
+        executable = process_table.table[i].executable;
+        }
+    }
+
     thread_table_t *my_entry;
     pagetable_t *pagetable;
     uint32_t phys_page;
@@ -191,12 +199,13 @@ void process_start(uint32_t exec)
     user_context.pc = elf.entry_point;
 
     /* Add the pid to the thread */
-    for (int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
+    /*for (int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
         if (process_table.table[i].executable == executable) {
             my_entry->process_id = process_table.table[i].pid;
             break;
         }
-    }
+    }*/
+    my_entry->process_id = pid;
 
     thread_goto_userland(&user_context);
 
@@ -209,13 +218,14 @@ process_id_t process_spawn( const char *executable ) {
     TID_t thr;
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
         if (process_table.table[i].state == PROC_FREE) {
-            process_table.table[i].executable = executable;
+            //process_table.table[i].executable = executable;
+            stringcopy(process_table.table[i].executable, executable, 64);
             process_table.table[i].pid        = process_table.new_pid++;
             process_table.table[i].state      = PROC_RUNNING;
             process_table.table[i].retval     = -1;
             process_table.table[i].parent     = process_get_current_process();
             semaphore_V(&process_table_semaphore);
-            thr = thread_create(&process_start, (uint32_t)executable);
+            thr = thread_create(&process_start, (uint32_t)process_table.table[i].pid);
             thread_run(thr);
             return process_table.table[i].pid;
         }
@@ -228,13 +238,14 @@ int process_run( const char *executable ) {
     semaphore_P(&process_table_semaphore);
     for(int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
         if (process_table.table[i].state == PROC_FREE) {
-            process_table.table[i].executable = executable;
+            //process_table.table[i].executable = executable;
+            stringcopy(process_table.table[i].executable, executable, 64);
             process_table.table[i].pid        = process_table.new_pid++;
             process_table.table[i].state      = PROC_RUNNING;
             process_table.table[i].retval     = -1;
             process_table.table[i].parent     = -1;
             semaphore_V(&process_table_semaphore);
-            process_start((uint32_t)executable);
+            process_start((uint32_t)process_table.table[i].pid);
         }
     }
     return -1;
@@ -272,7 +283,7 @@ uint32_t process_join( process_id_t pid ) {
             while (1) {
                 if(process_table.table[i].state == PROC_TERMINATED) {
                     uint32_t retval = process_table.table[i].retval;
-                    process_table.table[i].executable = "nil";
+                    //process_table.table[i].executable = "nil";
                     process_table.table[i].pid        = -1;
                     process_table.table[i].state      = PROC_FREE;
                     process_table.table[i].retval     = -1;
@@ -297,7 +308,7 @@ uint32_t process_join( process_id_t pid ) {
 /* Initialize process table. Should be called before any other process-related calls */
 void process_init ( void ) {
     for (int i = 0; i < CONFIG_MAX_PROCESSES; i++) {
-        process_table.table[i].executable = NULL;
+        //process_table.table[i].executable = NULL;
         process_table.table[i].pid        = -1;
         process_table.table[i].state      = PROC_FREE;
         process_table.table[i].retval     = -1;

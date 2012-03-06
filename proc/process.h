@@ -50,7 +50,7 @@ typedef enum {
 typedef int process_id_t;
 
 typedef struct process_t {
-    const char *executable;
+    char executable[32];
     process_id_t pid;
     process_state_t state;
     process_id_t parent;
