@@ -52,7 +52,6 @@
 #include <stddef.h>
 
 #include "lib/types.h"
-#define assert(e) ((e) ? (void)0 : printf("Assertion failed: %s at %s:%d\n", #e, __FILE__, __LINE__))
 
 #define MIN(arg1,arg2) ((arg1) > (arg2) ? (arg2) : (arg1))
 #define MAX(arg1,arg2) ((arg1) > (arg2) ? (arg1) : (arg2))
@@ -90,9 +89,6 @@ int syscall_read(int filehandle, void *buffer, int length);
 int syscall_write(int filehandle, const void *buffer, int length);
 int syscall_create(const char *filename, int size);
 int syscall_delete(const char *filename);
-int syscall_getfree(const char *filesystem);
-int syscall_stat(const char *filename);
-int syscall_filesize(int filehandle);
 
 int syscall_fork(void (*func)(int), int arg);
 void *syscall_memlimit(void *heap_end);
@@ -121,10 +117,12 @@ int snprintf(char *, int, const char *, ...);
 #endif
 
 #ifdef PROVIDE_HEAP_ALLOCATOR
+#define HEAP_SIZE 256 /* 256 byte heap - puny! */
+void heap_init();
 void *calloc(size_t nmemb, size_t size);
 void *malloc(size_t size);
-void *realloc(void *ptr, size_t size);
 void free(void *ptr);
+void *realloc(void *ptr, size_t size);
 #endif
 
 #ifdef PROVIDE_MISC

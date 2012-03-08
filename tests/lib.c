@@ -175,14 +175,6 @@ int syscall_create(const char *filename, int size)
     return (int)_syscall(SYSCALL_CREATE, (uint32_t)filename, (uint32_t)size, 0);
 }
 
-/* Remove the file identified by 'filename' from the file system it
- * resides on. Returns 0 on success or a negative value on error. 
- */
-int syscall_delete(const char *filename)
-{
-    return (int)_syscall(SYSCALL_DELETE, (uint32_t)filename, 0, 0);
-}
-
 /* The following functions are not system calls, but convenient
    library functions inspired by POSIX and the C standard library. */
 
@@ -640,13 +632,27 @@ typedef struct free_block {
 } free_block_t;
 
 static const size_t MIN_ALLOC_SIZE = sizeof(free_block_t);
-free_block_t *free_list = NULL;
 
-/* Return a block of at least size bytes, or NULL if no such block 
-   can be found.  */
-void *malloc(size_t size) {
+free_block_t *free_list;
+
+byte heap[HEAP_SIZE];
+
+/* Initialise the heap - malloc et al won't work unless this is called
+   first. */
+void heap_init()
+{
+    free_list = (free_block_t*) heap;
+    free_list->size = HEAP_SIZE;
+    free_list->next = NULL;
+}
+
+/* Return a block of at least size bytes (removing it from the free
+   list in the process), or NULL if no such block can be found.  */
+void *malloc(size_t size)
+{
     free_block_t *block;
     free_block_t **prev_p; /* Previous link so we can remove an element */
+
     if (size == 0) {
         return NULL;
     }
@@ -659,8 +665,7 @@ void *malloc(size_t size) {
     for (block = free_list, prev_p = &free_list;
          block;
          prev_p = &(block->next), block = block->next) {
-        if ( (int)( block->size - size - sizeof(size_t) ) >= 
-                (int)( MIN_ALLOC_SIZE+sizeof(size_t) ) ) {
+        if (block->size - size - sizeof(size_t) >= MIN_ALLOC_SIZE+sizeof(size_t)) {
             /* Block is too big, but can be split. */
             block->size -= size+sizeof(size_t);
             free_block_t *new_block =
@@ -675,39 +680,24 @@ void *malloc(size_t size) {
         }
         /* Else, check the next block. */
     }
-
-    /* No suitable free block was found, increase heap size. */
-    void *heap_end = syscall_memlimit(NULL);
-    void *new_heap_end = syscall_memlimit(heap_end+size+sizeof(size_t));
-    if(new_heap_end - heap_end - size - sizeof(size_t) == 0) {
-        block = (free_block_t *)heap_end;
-        block->size = size + sizeof(size_t);
-        return ((byte*)block)+sizeof(size_t);
-    } else {
-        /* Heap could not be increased sufficiently, set it back. */
-        syscall_memlimit(heap_end);
-    }
-    
-    /* No heap space left. */
+    /* No block was big enough. */
     return NULL;
 }
 
 /* Return the block pointed to by ptr to the free pool. */
-void free(void *ptr) {
-    //if (free != NULL) { /* Freeing NULL is a no-op */
+void free(void *ptr)
+{
     if (ptr != NULL) { /* Freeing NULL is a no-op */
         free_block_t *block = (free_block_t*)((byte*)ptr-sizeof(size_t));
         free_block_t *cur_block;
         free_block_t *prev_block;
-        free_block_t *prev_prev_block;
 
         /* Iterate through the free list, which is sorted by
            increasing address, and insert the newly freed block at the
            proper position. */
-        for (cur_block = free_list, prev_block = prev_prev_block = NULL; 
+        for (cur_block = free_list, prev_block = NULL; 
              ;
-             prev_prev_block = prev_block, prev_block = cur_block, 
-                    cur_block = cur_block->next) {
+             prev_block = cur_block, cur_block = cur_block->next) {
             if (cur_block > block || cur_block == NULL) {
                 /* Insert block here. */
                 if (prev_block == NULL) {
@@ -724,34 +714,12 @@ void free(void *ptr) {
                     prev_block->next = cur_block;
                     block = prev_block;
                 }
+
                 if (cur_block != NULL &&
                     (size_t)((byte*)cur_block - (byte*)block) == block->size) {
                     /* Merge with next. */
                     block->size += cur_block->size;
                     block->next = cur_block->next;
-                }
-                
-                uint32_t heap = (uint32_t) syscall_memlimit(NULL);
-                if((uint32_t)block + block->size == heap) {
-                    /* If block is the last on heap, remove block and 
-                       decrease heap size. */
-                    if(prev_block == block) {
-                        /* If merged with prev_block, we must update
-                           prev_prev_block. */
-                        if(prev_prev_block == NULL) {
-                            free_list = block->next;
-                        } else {
-                            prev_prev_block->next = block->next;
-                        }
-                    } else {                                       
-                        /* update prev_block. */
-                        if(prev_block == NULL) {
-                            free_list = block->next;
-                        } else {
-                            prev_block->next = block->next;                        
-                        }     
-                    }
-                    syscall_memlimit(block);          
                 }
                 return;
             }
