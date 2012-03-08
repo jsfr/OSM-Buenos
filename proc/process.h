@@ -38,6 +38,7 @@
 #define BUENOS_PROC_PROCESS
 
 #include "drivers/gcd.h"
+//#include "fs/vfs.h"
 #include "lib/types.h"
 
 #define USERLAND_STACK_TOP 0x7fffeffc
@@ -51,6 +52,7 @@
 #define MAX_OPEN_FILES 2
 
 typedef int process_id_t;
+typedef int openfile_t;
 
 typedef enum {
     PROCESS_FREE,
@@ -71,6 +73,7 @@ typedef struct {
     uint32_t stack_end; /* End of lowest stack. */
     uint32_t bot_free_stack; /* Start of lowest free stack (0 if
                                 none). */
+    openfile_t open_files[MAX_OPEN_FILES];
 } process_table_t;
 
 /* Run process in new thread, returns PID of new process. */

@@ -263,6 +263,11 @@ process_id_t process_spawn(const char* executable)
         (USERLAND_STACK_TOP & PAGE_SIZE_MASK)
         - CONFIG_USERLAND_STACK_SIZE*PAGE_SIZE;
     process_table[pid].bot_free_stack = 0;
+
+    for(int i = 0 ; i < MAX_OPEN_FILES ; i++) {
+        process_table[pid].open_files[i] = -1;
+    }
+
     thread = thread_create((void (*)(uint32_t))(&process_start), (uint32_t)pid);
     thread_run(thread);
     return pid;
@@ -533,6 +538,10 @@ int process_fork(void (*func)(int), int arg)
     }
 
     process_table[pid].threads++;
+
+    for(int i = 0 ; i < MAX_OPEN_FILES ; i++) {
+        process_table[pid].open_files[i] = -1;
+    }
 
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
