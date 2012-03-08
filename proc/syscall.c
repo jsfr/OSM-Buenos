@@ -44,6 +44,7 @@
 #include "kernel/thread.h"
 #include "drivers/device.h"
 #include "drivers/gcd.h"
+#include "fs/vfs.h"
 
 /**
  * Handle system calls. Interrupts are enabled when this function is
@@ -95,31 +96,71 @@ void syscall_handle(context_t *user_context)
         break;
 
     case SYSCALL_READ:
-        dev = device_get(YAMS_TYPECODE_TTY, 0);
-        KERNEL_ASSERT(dev != NULL);
-        gcd = (gcd_t*)dev->generic_device;
-        KERNEL_ASSERT(gcd != NULL);
-
-        rlen = user_context->cpu_regs[MIPS_REGISTER_A3];
         rbuffer = (char*) user_context->cpu_regs[MIPS_REGISTER_A2];
-        rlen2 = gcd->read(gcd,rbuffer,rlen);
+        rlen = user_context->cpu_regs[MIPS_REGISTER_A3];
 
-        KERNEL_ASSERT(rlen2 >= 0);
-        rbuffer[rlen2 + 1] = '\0';
-        user_context->cpu_regs[MIPS_REGISTER_V0] = rlen2;
+        if (user_context->cpu_regs[MIPS_REGISTER_A1] == FILEHANDLE_STDIN) {
+            dev = device_get(YAMS_TYPECODE_TTY, 0);
+            KERNEL_ASSERT(dev != NULL);
+            gcd = (gcd_t*)dev->generic_device;
+            KERNEL_ASSERT(gcd != NULL);
+
+            rlen2 = gcd->read(gcd,rbuffer,rlen);
+            
+            KERNEL_ASSERT(rlen2 >= 0);
+            rbuffer[rlen2 + 1] = '\0';
+            user_context->cpu_regs[MIPS_REGISTER_V0] = rlen2;
+        } else {
+            user_context->cpu_regs[MIPS_REGISTER_V0] = 
+                vfs_read(user_context->cpu_regs[MIPS_REGISTER_A1],rbuffer,rlen);
+        }
         break;
 
     case SYSCALL_WRITE:
-        /* Find system console (first tty) */
-        dev = device_get(YAMS_TYPECODE_TTY, 0);
-        gcd = (gcd_t *)dev->generic_device;
-        KERNEL_ASSERT(gcd != NULL);
-        
         wbuffer = (char*) user_context->cpu_regs[MIPS_REGISTER_A2];
         wlen = user_context->cpu_regs[MIPS_REGISTER_A3];
-        gcd->write(gcd, wbuffer, wlen);
-        user_context->cpu_regs[MIPS_REGISTER_V0] = wlen;
+
+        if (user_context->cpu_regs[MIPS_REGISTER_A1] == FILEHANDLE_STDOUT) {
+            /* Find system console (first tty) */
+            dev = device_get(YAMS_TYPECODE_TTY, 0);
+            gcd = (gcd_t *)dev->generic_device;
+            KERNEL_ASSERT(gcd != NULL);
+
+            gcd->write(gcd, wbuffer, wlen);
+            user_context->cpu_regs[MIPS_REGISTER_V0] = wlen;
+        } else {
+            user_context->cpu_regs[MIPS_REGISTER_V0] = 
+                vfs_write(user_context->cpu_regs[MIPS_REGISTER_A1],wbuffer,wlen);
+        }
         break;
+
+    case SYSCALL_SEEK:
+        user_context->cpu_regs[MIPS_REGISTER_V0] =
+            vfs_seek(user_context->cpu_regs[MIPS_REGISTER_A1],
+                     user_context->cpu_regs[MIPS_REGISTER_A2]);
+        break;
+        
+    case SYSCALL_OPEN:
+        user_context->cpu_regs[MIPS_REGISTER_V0] =
+            vfs_open((char*) user_context->cpu_regs[MIPS_REGISTER_A1]);
+        break;
+        
+    case SYSCALL_CLOSE:
+        user_context->cpu_regs[MIPS_REGISTER_V0] =
+            vfs_close(user_context->cpu_regs[MIPS_REGISTER_A1]);
+        break;
+
+    case SYSCALL_CREATE:
+        user_context->cpu_regs[MIPS_REGISTER_V0] =
+            vfs_create((char*) user_context->cpu_regs[MIPS_REGISTER_A1],
+                       user_context->cpu_regs[MIPS_REGISTER_A2]);
+        break;
+
+    case SYSCALL_DELETE:
+        user_context->cpu_regs[MIPS_REGISTER_V0] =
+            vfs_remove((char*) user_context->cpu_regs[MIPS_REGISTER_A1]);
+        break;
+
     default:
         KERNEL_PANIC("Unhandled system call\n");
     }
