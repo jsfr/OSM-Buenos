@@ -175,6 +175,14 @@ int syscall_create(const char *filename, int size)
     return (int)_syscall(SYSCALL_CREATE, (uint32_t)filename, (uint32_t)size, 0);
 }
 
+/* MARTINS SLAM HER!!!! */
+/* MARTINS SLAM HER!!!! */
+/* MARTINS SLAM HER!!!! */
+int syscall_delete(const char *filename)
+{
+    return (int)_syscall(SYSCALL_DELETE, (uint32_t)filename,0,0);
+}
+
 /* The following functions are not system calls, but convenient
    library functions inspired by POSIX and the C standard library. */
 
