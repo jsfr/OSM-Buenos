@@ -67,23 +67,45 @@ void lock_release(lock_t *lock) {
 
 /* Init a condition  */
 void condition_init(cond_t *cond) {
-    *cond = 0;
+    spinlock_reset(&cond->lock);
+    cond->cond = 0;
 }
 /* Wait until condition is true, based on a lock. It is assumed, that the lock
  * has been acquired, and that interrupts have been disabled. */
 void condition_wait(cond_t *cond, lock_t *lock) {
+    interrupt_status_t intr_status;
+
+    intr_status = _interrupt_disable();
+
+    spinlock_acquire(&cond->lock);
     sleepq_add(cond);
+    spinlock_release(&cond->lock);
+
     lock_release(lock);
     thread_switch();
     lock_acquire(lock);
+
+    _interrupt_set_state(intr_status);
 }
 
-/* wakes first in sleepq. It is assumed that interrupts have been disabled  */
+/* Wakes first in sleepq */
 void condition_signal(cond_t *cond) {
+    interrupt_status_t intr_status;
+
+    intr_status = _interrupt_disable();
+    spinlock_acquire(&cond->lock);
     sleepq_wake(cond);
+    spinlock_release(&cond->lock);
+    _interrupt_set_state(intr_status);
 }
 
-/* wakes all. It is assumed that interrupts have been disabled  */
+/* Wakes all */
 void condition_broadcast(cond_t *cond) {
-    sleepq_wake_all(cond);
+    interrupt_status_t intr_status;
+
+    intr_status = _interrupt_disable();
+    spinlock_acquire(&cond->lock);
+    sleepq_wake(cond);
+    spinlock_release(&cond->lock);
+    _interrupt_set_state(intr_status);
 }

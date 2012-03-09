@@ -13,7 +13,10 @@ typedef struct lock_t {
     spinlock_t slock;
 } lock_t;
 
-typedef int cond_t;
+typedef struct cond_t {
+    int cond;
+    spinlock_t lock;
+} cond_t;
 
 /* Initialize an already allocated lock_t structure such that it can be acquired 
  * and released afterwards. The function should return 0 on success and a
