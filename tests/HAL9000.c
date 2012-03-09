@@ -3,9 +3,6 @@
 char *substring(char *in, char *out, int start, int stop) {
     int i;
     for(i = 0 ; i <= stop - start ; i++) {
-        //puts("Adding: ");
-        putc(in[start+i]);
-        putc('\n');
         out[i] = in[start+i];
     }
     out[i] = '\0';
@@ -49,12 +46,68 @@ void execute(char *in) {
     char arg1[arg1end - (arg0end+2)];
     substring(in, arg1, arg0end+2, arg1end);
     
-    puts(cmd);
-    puts(arg0);
-    puts(arg1);
 
-    cmdend = arg0end + arg1end;
-    arg0end = cmdend;
+    puts("Doing: ");
+    puts(cmd);
+    putc('\n');
+    if (strcmp(cmd,"ls")) {
+        // do ls action.
+    }
+    if (strcmp(cmd,"cp")) {
+        // do cp action.
+    }
+    if (strcmp(cmd,"show")) {
+        // do show action.
+        int handle = syscall_open(arg0);
+        if( handle > -1) {
+            char buffer[255];
+            int res = syscall_read(handle,buffer,255);
+            puts(buffer);
+            while (res == 255) {
+                res = syscall_read(handle,buffer,255);
+                puts(buffer);
+            }
+            puts(buffer);
+            putc('\n');
+        }
+        else {
+            puts("Error while reading file: ");
+            puts(arg0);
+            putc('\n');
+        }
+        syscall_close(handle);
+        return;
+        
+    }
+    if (strcmp(cmd,"rm")) {
+        // do rm action.
+        int res = syscall_delete(arg0);
+        if(res == 0) {
+            return;
+        } else {
+            puts("Could not delete file: ");
+            puts(arg0);
+            putc('\n');
+            return;
+        }
+    }
+    if (strcmp(cmd,"touch")) {
+        // do touch action.
+        int res = syscall_create(arg0,0);
+        if(res == 0) {
+            return;
+        } else {
+            puts("Could not create file: ");
+            puts(arg0);
+            putc('\n');
+            return;
+        }
+        
+    }
+    if (strcmp(cmd,"exit")) {
+        syscall_exit(0);
+    }
+
     return;
 }
 
