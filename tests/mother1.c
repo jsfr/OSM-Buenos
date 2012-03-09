@@ -1,7 +1,5 @@
 #include "tests/lib.h"
 
-/* OLEKS -2: Eksempelprogram mht. TLB exception. */
-
 int main(void)
 {
     int child = syscall_exec("[fyamsHDD]kidd");
