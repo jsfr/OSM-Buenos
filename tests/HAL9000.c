@@ -12,7 +12,7 @@ char *substring(char *in, char *out, int start, int stop) {
 void execute(char *in) {
     int cmdend, arg0end, arg1end;
     int step = 0;
-    
+
     for (int i = 0 ; i <= (int) strlen(in) ; i++) {
         if(in[i] == ' ' || in[i] == '\0') {
             switch (step) {
@@ -45,7 +45,6 @@ void execute(char *in) {
     substring(in, arg0, cmdend+2, arg0end);
     char arg1[arg1end - (arg0end+2)];
     substring(in, arg1, arg0end+2, arg1end);
-    
 
     puts("Doing: ");
     puts(cmd);
