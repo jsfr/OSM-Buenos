@@ -39,7 +39,7 @@
 SOURCES  := halt.c hw.c exec.c calc.c \
 			mother.c mother1.c kidd.c kidd2.c \
 			stdout.c stdinout.c zombiegone.c \
-			badexec.c hello.c
+			badexec.c hello.c HAL9000.c
 
 OBJECTS  := $(patsubst %.c, %.o, $(SOURCES))
 TARGETS  := $(patsubst %.o, %, $(OBJECTS))
@@ -52,7 +52,7 @@ SYSLIBS := crt.o _syscall.o lib.o
 CC      := mips-elf-gcc
 AS      := mips-elf-as
 LD      := mips-elf-ld
-CFLAGS  += -G0 -I.. -Wall -W -Werror -fno-builtin
+CFLAGS  += -std=gnu99 -G0 -I.. -Wall -W -Werror -fno-builtin
 LDFLAGS := --script=ld.userland.script --cref -s -G0
 ASFLAGS := -I.. -Wa,-mips32
 

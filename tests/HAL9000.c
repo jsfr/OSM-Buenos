@@ -49,13 +49,13 @@ void execute(char *in) {
     puts("Doing: ");
     puts(cmd);
     putc('\n');
-    if (strcmp(cmd,"ls")) {
+    if (!strcmp(cmd,"ls")) {
         // do ls action.
     }
-    if (strcmp(cmd,"cp")) {
+    if (!strcmp(cmd,"cp")) {
         // do cp action.
     }
-    if (strcmp(cmd,"show")) {
+    if (!strcmp(cmd,"show")) {
         // do show action.
         int handle = syscall_open(arg0);
         if( handle > -1) {
@@ -76,9 +76,9 @@ void execute(char *in) {
         }
         syscall_close(handle);
         return;
-        
+
     }
-    if (strcmp(cmd,"rm")) {
+    if (!strcmp(cmd,"rm")) {
         // do rm action.
         int res = syscall_delete(arg0);
         if(res == 0) {
@@ -90,7 +90,7 @@ void execute(char *in) {
             return;
         }
     }
-    if (strcmp(cmd,"touch")) {
+    if (!strcmp(cmd,"touch")) {
         // do touch action.
         int res = syscall_create(arg0,0);
         if(res == 0) {
@@ -101,9 +101,9 @@ void execute(char *in) {
             putc('\n');
             return;
         }
-        
+
     }
-    if (strcmp(cmd,"exit")) {
+    if (!strcmp(cmd,"exit")) {
         syscall_exit(0);
     }
 
