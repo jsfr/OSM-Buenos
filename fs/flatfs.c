@@ -97,6 +97,7 @@ fs_t * flatfs_init(gbd_t *disk)
     int r;
     semaphore_t *sem;
 
+
     if(disk->block_size(disk) != FLATFS_BLOCK_SIZE)
 	return NULL;
 
@@ -344,20 +345,61 @@ int flatfs_create(fs_t *fs, char *filename, int size)
 
     /* ...and the rest of the blocks. Mark found block numbers in
        inode.*/
+
+    // Det er her det blivere enderen :'( CRRYYYYYYYY TODO make it.
     flatfs->buffer_inode->filesize = size;
     for(i=0; i<numblocks; i++) {
-	flatfs->buffer_inode->block[i] = bitmap_findnset(flatfs->buffer_bat,
-						      flatfs->totalblocks);
-	if((int)flatfs->buffer_inode->block[i] == -1) {
-	    /* Disk full. No free block found. */
-	    semaphore_V(flatfs->lock);
-	    return VFS_ERROR;
-	}
+        if(i < 7) {
+            flatfs->buffer_inode->block[i] = bitmap_findnset(flatfs->buffer_bat,
+                                                             flatfs->totalblocks);
+            if((int)flatfs->buffer_inode->block[i] == -1) {
+                /* Disk full. No free block found. */
+                semaphore_V(flatfs->lock);
+                return VFS_ERROR;
+            }
+        }
+        // go through single indirects.
+        if (i >= 7 && i < (FLATFS_BLOCKS_MAX+7)) {
+            *(flatfs->buffer_inode->sindirect)[i-7] =
+                bitmap_findnset(flatfs->buffer_bat, flatfs->totalblocks);
+
+            if((int)*(flatfs->buffer_inode->sindirect)[i-7] == -1) {
+                /* Disk full. No free block found. */
+                semaphore_V(flatfs->lock);
+                return VFS_ERROR;
+            }
+        }
+        // go though double indirects.
+        if (i >= (FLATFS_BLOCKS_MAX+7)) {
+            *(flatfs->buffer_inode->dindirect)[(i-7)/(FLATFS_BLOCKS_MAX)]
+                                            [i-7-FLATFS_BLOCKS_MAX] = 
+                bitmap_findnset(flatfs->buffer_bat, flatfs->totalblocks);
+
+            if((int)*(flatfs->buffer_inode->dindirect)[(i-7)/(FLATFS_BLOCKS_MAX)]
+                                            [i-7-FLATFS_BLOCKS_MAX] == -1) {
+                /* Disk full. No free block found. */
+                semaphore_V(flatfs->lock);
+                return VFS_ERROR;
+            }
+        }
     }
 
     /* Mark rest of the blocks in inode as unused. */
-    while(i < (FLATFS_BLOCK_SIZE / 4 - 1))
-	flatfs->buffer_inode->block[i++] = 0;
+    while(i < (FLATFS_MAX_FILESIZE / FLATFS_BLOCK_SIZE)) {
+        if(i < 7) {
+            flatfs->buffer_inode->block[i++] = 0;
+        }
+        // go through single indirects.
+        if (i >= 7 && i < (FLATFS_BLOCKS_MAX+7)) {
+            *(flatfs->buffer_inode->sindirect)[i++-7] = 0;
+        }
+        // go though double indirects.
+        if (i >= (FLATFS_BLOCKS_MAX+7)) {
+            *(flatfs->buffer_inode->dindirect)[(i-7)/(FLATFS_BLOCKS_MAX)]
+                                              [i-7-FLATFS_BLOCKS_MAX] = 0;
+        i++;
+        }
+    }
 
     req.block = FLATFS_ALLOCATION_BLOCK;
     req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
@@ -393,16 +435,43 @@ int flatfs_create(fs_t *fs, char *filename, int size)
        is no longer needed, so lets use it as zero buffer. */
     memoryset(flatfs->buffer_bat, 0, FLATFS_BLOCK_SIZE);
     for(i=0;i<numblocks;i++) {
-	req.block = flatfs->buffer_inode->block[i];
-	req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
-	req.sem   = NULL;
-	r = flatfs->disk->write_block(flatfs->disk, &req);
-	if(r==0) {
-	    /* An error occured. */
-	    semaphore_V(flatfs->lock);
-	    return VFS_ERROR;
-	}
-
+        if(i < 7) {
+            req.block = flatfs->buffer_inode->block[i];
+            req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
+            req.sem   = NULL;
+            r = flatfs->disk->write_block(flatfs->disk, &req);
+            if(r==0) {
+                /* An error occured. */
+                semaphore_V(flatfs->lock);
+                return VFS_ERROR;
+            }
+        }
+        // go through single indirects.
+        if (i >= 7 && i < (FLATFS_BLOCKS_MAX+7)) {
+            req.block = *(flatfs->buffer_inode->sindirect)[i-7];
+            req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
+            req.sem   = NULL;
+            r = flatfs->disk->write_block(flatfs->disk, &req);
+            if(r==0) {
+                /* An error occured. */
+                semaphore_V(flatfs->lock);
+                return VFS_ERROR;
+            }
+        }
+        // go though double indirects.
+        if (i >= (FLATFS_BLOCKS_MAX+7)) {
+            req.block = *(flatfs->buffer_inode->dindirect)
+                                            [(i-7)/(FLATFS_BLOCKS_MAX)]
+                                            [i-7-FLATFS_BLOCKS_MAX];
+            req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
+            req.sem   = NULL;
+            r = flatfs->disk->write_block(flatfs->disk, &req);
+            if(r==0) {
+                /* An error occured. */
+                semaphore_V(flatfs->lock);
+                return VFS_ERROR;
+            }
+        }
     }
 
     semaphore_V(flatfs->lock);

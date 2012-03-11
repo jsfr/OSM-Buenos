@@ -42,7 +42,7 @@
 #include "lib/libc.h"
 #include "lib/bitmap.h"
 
-/* In TFS block size is 512. This will affect to various other
+/* In FlatFS block size is 512. This will affect to various other
    features of TFS e.g. maximum file size. */
 #define FLATFS_BLOCK_SIZE 512
 
@@ -63,11 +63,12 @@
    are of type uint32_t and one pointer "slot" is reserved for
    file size.
 */
-#define FLATFS_BLOCKS_MAX ((FLATFS_BLOCK_SIZE/sizeof(uint32_t))-1)
+// TODO NEW NAME MEEEEEEE :D
+#define FLATFS_BLOCKS_MAX (FLATFS_BLOCK_SIZE/sizeof(uint32_t))
 
 /* Maximum file size. 512-byte Inode can store 127 blocks for a file.
-   512*127=65024 */ //TODO this is no longer correct!!!
-#define FLATFS_MAX_FILESIZE (FLATFS_BLOCK_SIZE*FLATFS_BLOCKS_MAX)
+   512*127=65024 */
+#define FLATFS_MAX_FILESIZE (7*FLATFS_BLOCK_SIZE + (FLATFS_BLOCK_SIZE * FLATFS_BLOCKS_MAX) + ((FLATFS_BLOCK_SIZE * FLATFS_BLOCKS_MAX) * (FLATFS_BLOCK_SIZE * FLATFS_BLOCKS_MAX)))
 
 /* File inode block. Inode contains the filesize and a table of blocknumbers
    allocated for the file. In TFS files can't have more blocks than fits in
