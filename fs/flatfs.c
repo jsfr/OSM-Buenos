@@ -77,7 +77,7 @@ typedef struct {
 
 
 /**
- * Initialize trivial filesystem. Allocates 1 page of memory dynamically for
+ * Initialize flat filesystem. Allocates 1 page of memory dynamically for
  * filesystem data structure, flatfs data structure and buffers needed.
  * Sets fs_t and flatfs_t fields. If initialization is succesful, returns
  * pointer to fs_t data structure. Else NULL pointer is returned.

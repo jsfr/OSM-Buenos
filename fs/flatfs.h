@@ -66,7 +66,7 @@
 #define FLATFS_BLOCKS_MAX ((FLATFS_BLOCK_SIZE/sizeof(uint32_t))-1)
 
 /* Maximum file size. 512-byte Inode can store 127 blocks for a file.
-   512*127=65024 */
+   512*127=65024 */ //TODO this is no longer correct!!!
 #define FLATFS_MAX_FILESIZE (FLATFS_BLOCK_SIZE*FLATFS_BLOCKS_MAX)
 
 /* File inode block. Inode contains the filesize and a table of blocknumbers
