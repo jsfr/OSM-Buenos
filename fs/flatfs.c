@@ -75,6 +75,18 @@ typedef struct {
     flatfs_direntry_t *buffer_md;      /* buffer for directory block */
 } flatfs_t;
 
+/* Finds the correct place in the inode depending on the index */
+uint32_t* flatfs_block(flatfs_inode_t *inode, uint32_t i) {
+    if (i < 7) { // direct blocks
+        return &inode->block[i];
+    }
+    else if (7 < i && i < (FLATFS_BLOCKS_MAX+7)) { // single indirect
+        return inode->sindirect[i-7];
+    }
+    else { // double indirect
+        return inode->dindirect[(i-7)/(FLATFS_BLOCKS_MAX)][i-7-FLATFS_BLOCKS_MAX];
+    }
+}
 
 /**
  * Initialize flat filesystem. Allocates 1 page of memory dynamically for
