@@ -859,29 +859,20 @@ int vfs_remove(char *pathname)
  */
 
 int vfs_getfiles(char *pathname, char **buffer, int numfiles) {
-    char volumename[VFS_NAME_LENGTH];
-    char filename[VFS_NAME_LENGTH];
     fs_t *fs = NULL;
-    int numberOfFiles = 0;
 
     if (vfs_start_op() != VFS_OK)
         return VFS_UNUSABLE;
-    
-    if (vfs_parse_pathname(pathname, volumename, filename) != VFS_OK) {
-        vfs_end_op();
-        return VFS_ERROR;
-    }
 
     semaphore_P(vfs_table.sem);
 
-    fs = vfs_get_filesystem(volumename);
+    fs = vfs_get_filesystem(pathname);
 
     if(fs == NULL) {
 	semaphore_V(vfs_table.sem);
         vfs_end_op();
 	return VFS_NO_SUCH_FS;
     }
-    
     // Start actual work.
     int ret = fs->getfiles(fs, buffer, numfiles);
     //Work is done

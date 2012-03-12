@@ -168,6 +168,7 @@ fs_t * tfs_init(gbd_t *disk)
     fs->read    = tfs_read;
     fs->write   = tfs_write;
     fs->getfree  = tfs_getfree;
+    fs->getfiles = tfs_getfiles;
 
     return fs;
 }
@@ -778,6 +779,45 @@ int tfs_write(fs_t *fs, int fileid, void *buffer, int datasize, int offset)
 
     semaphore_V(tfs->lock);
     return written;
+}
+
+/**
+ * Reads the MD block and writes all the filenames in the buffer.
+ * It reads at most numfiles names.
+ * @param fs Pointer to datastructure on device.
+ * @param buffer A 2 dimensional array to hold filenames.
+ * @param numfiles Maximum number of files to read (usually size of buffer).
+ * @return The actual number of files read from MD (can be lower than numfiles.)
+ */
+int tfs_getfiles(fs_t *fs, char**buffer, int numfiles) {
+    tfs_t *tfs;
+    gbd_request_t req;
+    uint32_t i;
+    int r;
+    int files = 0;
+    tfs = (tfs_t *)fs->internal;
+
+    semaphore_P(tfs->lock);
+    
+    req.block     = TFS_DIRECTORY_BLOCK;
+    req.buf       = ADDR_KERNEL_TO_PHYS((uint32_t)tfs->buffer_md);
+    req.sem       = NULL;
+    r = tfs->disk->read_block(tfs->disk,&req);
+    if(r == 0) {
+	/* An error occured during read. */
+	semaphore_V(tfs->lock);
+	return VFS_ERROR;
+    }
+
+    for(i=0;i < TFS_MAX_FILES && (int)i < numfiles;i++) {
+        if (strlen(tfs->buffer_md[i].name) > 0) {
+            files++;
+            buffer[i] = tfs->buffer_md[i].name;
+        }
+    }
+
+    semaphore_V(tfs->lock);
+    return files;
 }
 
 /**

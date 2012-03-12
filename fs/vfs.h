@@ -157,7 +157,7 @@ int vfs_write(openfile_t file, void *buffer, int datasize);
 int vfs_create(char *pathname, int size);
 int vfs_remove(char *pathname); 
 //used by ls, returns number of files actually on volume
-int vfs_getfiles(char **buffer, int numfiles);
+int vfs_getfiles(char* pathname, char **buffer, int numfiles);
 int vfs_getfree(char *filesystem);
 
 #endif
