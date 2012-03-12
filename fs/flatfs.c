@@ -109,7 +109,6 @@ fs_t * flatfs_init(gbd_t *disk)
     int r;
     semaphore_t *sem;
 
-
     if(disk->block_size(disk) != FLATFS_BLOCK_SIZE)
 	return NULL;
 
@@ -127,7 +126,6 @@ fs_t * flatfs_init(gbd_t *disk)
 	return NULL;
     }
     addr = ADDR_PHYS_TO_KERNEL(addr);      /* transform to vm address */
-
 
     /* Assert that one page is enough */
     KERNEL_ASSERT(PAGE_SIZE >= (3*FLATFS_BLOCK_SIZE+sizeof(flatfs_t)+sizeof(fs_t)));
@@ -298,9 +296,9 @@ int flatfs_create(fs_t *fs, char *filename, int size)
 
     semaphore_P(flatfs->lock);
 
-    if(numblocks > (FLATFS_BLOCK_SIZE / 4 - 1)) {
-	semaphore_V(flatfs->lock);
-	return VFS_ERROR;
+    if(numblocks > (FLATFS_MAX_FILESIZE/FLATFS_BLOCK_SIZE)) {
+	    semaphore_V(flatfs->lock);
+	    return VFS_ERROR;
     }
 
     /* Read directory block. Check that file doesn't allready exist and
@@ -310,27 +308,26 @@ int flatfs_create(fs_t *fs, char *filename, int size)
     req.sem = NULL;
     r = flatfs->disk->read_block(flatfs->disk, &req);
     if(r == 0) {
-	/* An error occured. */
-	semaphore_V(flatfs->lock);
-	return VFS_ERROR;
+	    /* An error occured. */
+	    semaphore_V(flatfs->lock);
+	    return VFS_ERROR;
     }
 
     for(i=0;i<FLATFS_MAX_FILES;i++) {
-	if(stringcmp(flatfs->buffer_md[i].name, filename) == 0) {
-	    semaphore_V(flatfs->lock);
-	    return VFS_ERROR;
-	}
-
-	if(flatfs->buffer_md[i].inode == 0) {
-	    /* found free slot from directory */
-	    index = i;
-	}
+	    if(stringcmp(flatfs->buffer_md[i].name, filename) == 0) {
+	        semaphore_V(flatfs->lock);
+	        return VFS_ERROR;
+	    }
+	    if(flatfs->buffer_md[i].inode == 0) {
+	        /* found free slot from directory */
+	        index = i;
+	    }
     }
 
     if(index == -1) {
-	/* there was no space in directory, because index is not set */
-	semaphore_V(flatfs->lock);
-	return VFS_ERROR;
+	    /* there was no space in directory, because index is not set */
+	    semaphore_V(flatfs->lock);
+	    return VFS_ERROR;
     }
 
     stringcopy(flatfs->buffer_md[index].name,filename, FLATFS_FILENAME_MAX);
@@ -341,25 +338,23 @@ int flatfs_create(fs_t *fs, char *filename, int size)
     req.sem = NULL;
     r = flatfs->disk->read_block(flatfs->disk, &req);
     if(r==0) {
-	/* An error occured. */
-	semaphore_V(flatfs->lock);
-	return VFS_ERROR;
+	    /* An error occured. */
+	    semaphore_V(flatfs->lock);
+	    return VFS_ERROR;
     }
-
 
     /* ...find space for inode... */
     flatfs->buffer_md[index].inode = bitmap_findnset(flatfs->buffer_bat,
 						  flatfs->totalblocks);
     if((int)flatfs->buffer_md[index].inode == -1) {
-	semaphore_V(flatfs->lock);
-	return VFS_ERROR;
+	    semaphore_V(flatfs->lock);
+	    return VFS_ERROR;
     }
 
     /* ...and the rest of the blocks. Mark found block numbers in
        inode.*/
 
-    // Det er her det blivere enderen :'( CRRYYYYYYYY TODO make it.
-    flatfs->buffer_inode->filesize = size;
+   flatfs->buffer_inode->filesize = size;
     for(i=0; i<numblocks; i++) {
          *flatfs_block(flatfs->buffer_inode,i) = bitmap_findnset(flatfs->buffer_bat,
                                                                   flatfs->totalblocks);
@@ -372,18 +367,21 @@ int flatfs_create(fs_t *fs, char *filename, int size)
 
     /* Mark rest of the blocks in inode as unused. */
     while(i < (FLATFS_MAX_FILESIZE / FLATFS_BLOCK_SIZE)) {
+        kprintf("%d\n", i);
         *flatfs_block(flatfs->buffer_inode,i) = 0;
         i++;
     }
+
+    kwrite("done\n");
 
     req.block = FLATFS_ALLOCATION_BLOCK;
     req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
     req.sem   = NULL;
     r = flatfs->disk->write_block(flatfs->disk, &req);
     if(r==0) {
-	/* An error occured. */
-	semaphore_V(flatfs->lock);
-	return VFS_ERROR;
+	    /* An error occured. */
+	    semaphore_V(flatfs->lock);
+	    return VFS_ERROR;
     }
 
     req.block = FLATFS_DIRECTORY_BLOCK;
@@ -391,9 +389,9 @@ int flatfs_create(fs_t *fs, char *filename, int size)
     req.sem   = NULL;
     r = flatfs->disk->write_block(flatfs->disk, &req);
     if(r==0) {
-	/* An error occured. */
-	semaphore_V(flatfs->lock);
-	return VFS_ERROR;
+	    /* An error occured. */
+	    semaphore_V(flatfs->lock);
+	    return VFS_ERROR;
     }
 
     req.block = flatfs->buffer_md[index].inode;
@@ -401,9 +399,9 @@ int flatfs_create(fs_t *fs, char *filename, int size)
     req.sem   = NULL;
     r = flatfs->disk->write_block(flatfs->disk, &req);
     if(r==0) {
-	/* An error occured. */
-	semaphore_V(flatfs->lock);
-	return VFS_ERROR;
+	    /* An error occured. */
+	    semaphore_V(flatfs->lock);
+	    return VFS_ERROR;
     }
 
     /* Write zeros to the reserved blocks. Buffer for allocation block
@@ -494,7 +492,7 @@ int flatfs_remove(fs_t *fs, char *filename)
     bitmap_set(flatfs->buffer_bat,flatfs->buffer_md[index].inode,0);
     i=0;
     while(*flatfs_block(flatfs->buffer_inode,i) != 0 &&
-	  i < FLATFS_MAX_FILESIZE/FLATFS_BLOCKS_MAX ) {
+	  i < FLATFS_MAX_FILESIZE/FLATFS_BLOCK_SIZE ) {
 	bitmap_set(flatfs->buffer_bat,*flatfs_block(flatfs->buffer_inode,i),0);
 	i++;
     }

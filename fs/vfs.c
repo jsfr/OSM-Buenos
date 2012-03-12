@@ -780,7 +780,7 @@ int vfs_create(char *pathname, int size)
     char filename[VFS_NAME_LENGTH];
     fs_t *fs = NULL;
     int ret;
-    
+
     KERNEL_ASSERT(size >= 0);
 
     if (vfs_start_op() != VFS_OK)
@@ -802,7 +802,7 @@ int vfs_create(char *pathname, int size)
     }
 
     ret = fs->create(fs, filename, size);
-    
+
     semaphore_V(vfs_table.sem);
 
     vfs_end_op();
@@ -828,7 +828,7 @@ int vfs_remove(char *pathname)
 
     if (vfs_start_op() != VFS_OK)
         return VFS_UNUSABLE;
-    
+
     if (vfs_parse_pathname(pathname, volumename, filename) != VFS_OK) {
         vfs_end_op();
         return VFS_ERROR;
@@ -845,7 +845,7 @@ int vfs_remove(char *pathname)
     }
 
     ret = fs->remove(fs, filename);
-    
+
     semaphore_V(vfs_table.sem);
 
     vfs_end_op();
@@ -876,7 +876,7 @@ int vfs_getfiles(char *pathname, char **buffer, int numfiles) {
     // Start actual work.
     int ret = fs->getfiles(fs, buffer, numfiles);
     //Work is done
-    
+
     semaphore_V(vfs_table.sem);
 
     vfs_end_op();

@@ -42,6 +42,19 @@
 #include "proc/syscall.h"
 #include "tests/lib.h"
 
+/* MARTINS SLAM HER!!!! */
+/* MARTINS SLAM HER!!!! */
+/* MARTINS SLAM HER!!!! */
+int syscall_list(const char* pathname, char** buffer, int numfiles) {
+    return (int)_syscall(SYSCALL_LIST,
+                         (uint32_t)pathname,
+                         (uint32_t)buffer,
+                         numfiles);
+}
+int syscall_delete(const char *filename)
+{
+    return (int)_syscall(SYSCALL_DELETE, (uint32_t)filename,0,0);
+}
 
 /* Halt the system (sync disks and power off). This function will
  * never return. 
@@ -173,20 +186,6 @@ int syscall_write(int filehandle, const void *buffer, int length)
 int syscall_create(const char *filename, int size)
 {
     return (int)_syscall(SYSCALL_CREATE, (uint32_t)filename, (uint32_t)size, 0);
-}
-
-/* MARTINS SLAM HER!!!! */
-/* MARTINS SLAM HER!!!! */
-/* MARTINS SLAM HER!!!! */
-int syscall_list(const char* pathname, char** buffer, int numfiles) {
-    return (int)_syscall(SYSCALL_LIST,
-                         (uint32_t)pathname,
-                         (uint32_t)buffer,
-                         numfiles);
-}
-int syscall_delete(const char *filename)
-{
-    return (int)_syscall(SYSCALL_DELETE, (uint32_t)filename,0,0);
 }
 
 /* The following functions are not system calls, but convenient
@@ -660,26 +659,33 @@ void heap_init()
     free_list->next = NULL;
 }
 
-/* Return a block of at least size bytes (removing it from the free
-   list in the process), or NULL if no such block can be found.  */
-void *malloc(size_t size)
-{
+
+/* Return a block of at least size bytes, or NULL if no such block 
+   can be found.  */
+void *malloc(size_t size) {
     free_block_t *block;
     free_block_t **prev_p; /* Previous link so we can remove an element */
-
     if (size == 0) {
         return NULL;
     }
 
     /* Ensure block is big enough for bookkeeping. */
+    printf("got size %d\n", size);
     size=MAX(MIN_ALLOC_SIZE,size);
+    /* Word-align */
+    if (size % 4 != 0) {
+      size &= ~3;
+      size += 4;
+    }
+    printf("allocating %d\n", size);
 
     /* Iterate through list of free blocks, using the first that is
        big enough for the request. */
     for (block = free_list, prev_p = &free_list;
          block;
          prev_p = &(block->next), block = block->next) {
-        if (block->size - size - sizeof(size_t) >= MIN_ALLOC_SIZE+sizeof(size_t)) {
+        if ( (int)( block->size - size - sizeof(size_t) ) >= 
+                (int)( MIN_ALLOC_SIZE+sizeof(size_t) ) ) {
             /* Block is too big, but can be split. */
             block->size -= size+sizeof(size_t);
             free_block_t *new_block =
@@ -694,7 +700,8 @@ void *malloc(size_t size)
         }
         /* Else, check the next block. */
     }
-    /* No block was big enough. */
+
+    /* No heap space left. */
     return NULL;
 }
 

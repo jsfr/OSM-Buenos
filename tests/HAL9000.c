@@ -52,9 +52,8 @@ void execute(char *in) {
                 break;
 
             default:
-                puts("Unknown number of parameters/commands");
-                syscall_exit(1);
-                break;
+                puts("Unknown number of parameters/commands\n");
+                return;
             }
         }
     }
@@ -72,8 +71,7 @@ void execute(char *in) {
 
         for (int i = 0 ; i < read ; i++) {
             puts("File ");
-            puts(*buffer);
-            buffer[i]++;
+            puts(buffer[i]);
             putc('\n');
         }
     }
@@ -117,7 +115,6 @@ void execute(char *in) {
     }
     if (!strcmp(cmd,"touch")) {
         // do touch action.
-        puts(arg0);putc('\n');
         int res = syscall_create(arg0,0);
         if(res == 0) {
             return;
