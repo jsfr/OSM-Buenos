@@ -9,10 +9,10 @@ int main() {
     char in[255];
     int len = 0;
     while(1) {
-    puts("[shell]$ ");
-    len = readline(in,255);
-    execute(in);
-    len = len;
+        puts("[shell]$ ");
+        len = readline(in,255);
+        execute(in);
+        len = len;
     }
     return 0;
 }
@@ -66,7 +66,16 @@ void execute(char *in) {
 
     puts("Doing: "); puts(cmd); putc('\n');
     if (!strcmp(cmd,"ls")) {
-        // do ls action.
+        char *buffer[100];
+        int read = syscall_list(arg0, buffer, 100);
+        puts("SYSCALL DONE\n");
+
+        for (int i = 0 ; i < read ; i++) {
+            puts("File ");
+            puts(*buffer);
+            buffer[i]++;
+            putc('\n');
+        }
     }
     if (!strcmp(cmd,"cp")) {
         // do cp action.
