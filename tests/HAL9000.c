@@ -1,5 +1,24 @@
 #include "tests/lib.h"
 
+char* substring(char *in, char *out, int start, int stop);
+void execute(char *in);
+
+/* The main loop of the shell */
+int main() {
+    puts("Hello Dave\n");
+    char in[255];
+    int len = 0;
+    while(1) {
+    puts("[shell]$ ");
+    len = readline(in,255);
+    execute(in);
+    len = len;
+    }
+    return 0;
+}
+
+/* Takes a substring from in
+ * from start to stop and stores it in out */
 char *substring(char *in, char *out, int start, int stop) {
     int i;
     for(i = 0 ; i <= stop - start ; i++) {
@@ -9,11 +28,12 @@ char *substring(char *in, char *out, int start, int stop) {
     return out;
 }
 
+/* Checks wheter the command is known and if so executes it */
 void execute(char *in) {
-    int cmdend, arg0end, arg1end;
+    int cmdend = 0, arg0end = 0, arg1end = 0;
     int step = 0;
 
-    for (int i = 0 ; i <= (int) strlen(in) ; i++) {
+    for (int i = 0 ; i <= (int)strlen(in) ; i++) {
         if(in[i] == ' ' || in[i] == '\0') {
             switch (step) {
             case 0:
@@ -32,23 +52,19 @@ void execute(char *in) {
                 break;
 
             default:
-                puts("I've turned off the oxygen, Dave.\n");
+                puts("Unknown number of parameters/commands");
                 syscall_exit(1);
                 break;
             }
         }
     }
 
-    char cmd[cmdend];
+    char cmd[10], arg0[50], arg1[50];
     substring(in, cmd, 0, cmdend);
-    char arg0[arg0end - (cmdend+2)];
     substring(in, arg0, cmdend+2, arg0end);
-    char arg1[arg1end - (arg0end+2)];
     substring(in, arg1, arg0end+2, arg1end);
 
-    puts("Doing: ");
-    puts(cmd);
-    putc('\n');
+    puts("Doing: "); puts(cmd); putc('\n');
     if (!strcmp(cmd,"ls")) {
         // do ls action.
     }
@@ -92,6 +108,7 @@ void execute(char *in) {
     }
     if (!strcmp(cmd,"touch")) {
         // do touch action.
+        puts(arg0);putc('\n');
         int res = syscall_create(arg0,0);
         if(res == 0) {
             return;
@@ -104,19 +121,9 @@ void execute(char *in) {
 
     }
     if (!strcmp(cmd,"exit")) {
+        puts("I've turned off the oxygen, Dave.\n");
         syscall_exit(0);
     }
 
     return;
-}
-
-int main() {
-    puts("Hello Dave.\n");
-    char in[255];
-    int len = 0;
-    len = readline(in,255);
-    execute(in);
-
-    len = len;
-    return 0;
 }
