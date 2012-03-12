@@ -128,6 +128,9 @@ typedef struct fs_struct{
        Returns success value as defined above (VFS_OK, etc.) */
     int (*remove)(struct fs_struct *fs, char *filename);
 
+    /* Function pointer to a function which lists the files on the given volume. */
+    int (*getfiles)(struct fs_struct *fs, char **buffer, int numfiles);
+
     /* Function pointer to a function which returns the number of free
        bytes in the filesystem. Pointer to this structure is given as
        argument to the function. 
@@ -152,7 +155,9 @@ int vfs_read(openfile_t file, void *buffer, int bufsize);
 int vfs_write(openfile_t file, void *buffer, int datasize);
 
 int vfs_create(char *pathname, int size);
-int vfs_remove(char *pathname);
+int vfs_remove(char *pathname); 
+//used by ls, returns number of files actually on volume
+int vfs_getfiles(char **buffer, int numfiles);
 int vfs_getfree(char *filesystem);
 
 #endif

@@ -178,6 +178,12 @@ int syscall_create(const char *filename, int size)
 /* MARTINS SLAM HER!!!! */
 /* MARTINS SLAM HER!!!! */
 /* MARTINS SLAM HER!!!! */
+int syscall_list(const char* pathname, char** buffer, int numfiles) {
+    return (int)_syscall(SYSCALL_LIST,
+                         (uint32_t)pathname,
+                         (uint32_t)buffer,
+                         numfiles);
+}
 int syscall_delete(const char *filename)
 {
     return (int)_syscall(SYSCALL_DELETE, (uint32_t)filename,0,0);

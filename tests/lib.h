@@ -89,6 +89,7 @@ int syscall_read(int filehandle, void *buffer, int length);
 int syscall_write(int filehandle, const void *buffer, int length);
 int syscall_create(const char *filename, int size);
 int syscall_delete(const char *filename);
+int syscall_list(const char* pathname, char **buffer, int numfiles);
 
 int syscall_fork(void (*func)(int), int arg);
 void *syscall_memlimit(void *heap_end);
