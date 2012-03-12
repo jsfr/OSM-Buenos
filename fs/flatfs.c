@@ -493,9 +493,9 @@ int flatfs_remove(fs_t *fs, char *filename)
 
     bitmap_set(flatfs->buffer_bat,flatfs->buffer_md[index].inode,0);
     i=0;
-    while(flatfs->buffer_inode->block[i] != 0 &&
-	  i < (FLATFS_BLOCK_SIZE / 4 - 1)) {
-	bitmap_set(flatfs->buffer_bat,flatfs->buffer_inode->block[i],0);
+    while(*flatfs_block(flatfs->buffer_inode,i) != 0 &&
+	  i < FLATFS_MAX_FILESIZE/FLATFS_BLOCKS_MAX ) {
+	bitmap_set(flatfs->buffer_bat,*flatfs_block(flatfs->buffer_inode,i),0);
 	i++;
     }
 
@@ -593,7 +593,7 @@ int flatfs_read(fs_t *fs, int fileid, void *buffer, int bufsize, int offset)
     /* Read blocks from b1 to b2. First and last are
        special cases because whole block might not be written
        to the buffer. */
-    req.block = flatfs->buffer_inode->block[b1];
+    req.block = *flatfs_block(flatfs->buffer_inode,b1);
     req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
     req.sem   = NULL;
     r = flatfs->disk->read_block(flatfs->disk, &req);
@@ -614,7 +614,7 @@ int flatfs_read(fs_t *fs, int fileid, void *buffer, int bufsize, int offset)
     buffer = (void *)((uint32_t)buffer + read);
     b1++;
     while(b1 <= b2) {
-	req.block = flatfs->buffer_inode->block[b1];
+	req.block = *flatfs_block(flatfs->buffer_inode,b1);
 	req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
 	req.sem   = NULL;
 	r = flatfs->disk->read_block(flatfs->disk, &req);
@@ -720,7 +720,7 @@ int flatfs_write(fs_t *fs, int fileid, void *buffer, int datasize, int offset)
        function. */
     written = MIN(FLATFS_BLOCK_SIZE - (offset % FLATFS_BLOCK_SIZE),datasize);
     if(written < FLATFS_BLOCK_SIZE) {
-	req.block = flatfs->buffer_inode->block[b1];
+	req.block = *flatfs_block(flatfs->buffer_inode,b1);
 	req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
 	req.sem   = NULL;
 	r = flatfs->disk->read_block(flatfs->disk, &req);
@@ -736,7 +736,7 @@ int flatfs_write(fs_t *fs, int fileid, void *buffer, int datasize, int offset)
 			       (offset % FLATFS_BLOCK_SIZE)),
 	    buffer);
 
-    req.block = flatfs->buffer_inode->block[b1];
+    req.block = *flatfs_block(flatfs->buffer_inode,b1);
     req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
     req.sem   = NULL;
     r = flatfs->disk->write_block(flatfs->disk, &req);
@@ -754,7 +754,7 @@ int flatfs_write(fs_t *fs, int fileid, void *buffer, int datasize, int offset)
 	    /* Last block. If partial write, read the block first.
 	       Write anyway always to the beginning of the block */
 	    if((datasize - written)  < FLATFS_BLOCK_SIZE) {
-		req.block = flatfs->buffer_inode->block[b1];
+		req.block = *flatfs_block(flatfs->buffer_inode,b1);
 		req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
 		req.sem   = NULL;
 		r = flatfs->disk->read_block(flatfs->disk, &req);
@@ -779,7 +779,7 @@ int flatfs_write(fs_t *fs, int fileid, void *buffer, int datasize, int offset)
 	    buffer = (void *)((uint32_t)buffer + FLATFS_BLOCK_SIZE);
 	}
 
-	req.block = flatfs->buffer_inode->block[b1];
+	req.block = *flatfs_block(flatfs->buffer_inode,b1);
 	req.buf   = ADDR_KERNEL_TO_PHYS((uint32_t)flatfs->buffer_bat);
 	req.sem   = NULL;
 	r = flatfs->disk->write_block(flatfs->disk, &req);
