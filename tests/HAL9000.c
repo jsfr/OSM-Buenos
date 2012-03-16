@@ -63,17 +63,18 @@ void execute(char *in) {
     substring(in, arg0, cmdend+2, arg0end);
     substring(in, arg1, arg0end+2, arg1end);
 
-    puts("Doing: "); puts(cmd); putc('\n');
+    //puts("Doing: "); puts(cmd); putc('\n');
     if (!strcmp(cmd,"ls")) {
-        char *buffer[100];
-        int read = syscall_list(arg0, buffer, 100);
-        puts("SYSCALL DONE\n");
-
+        char buffer[100][20];
+        for (int i = 0 ; i < 100 ; i++) {
+            strncpy(buffer[i],"Filename goes here.",20);
+        }
+        int read = syscall_list(arg0,(char**) buffer, 100);
         for (int i = 0 ; i < read ; i++) {
-            puts("File ");
+            puts("File: ");
             puts(buffer[i]);
             putc('\n');
-        }
+            }
     }
     if (!strcmp(cmd,"cp")) {
         // do cp action.
@@ -115,7 +116,7 @@ void execute(char *in) {
     }
     if (!strcmp(cmd,"touch")) {
         // do touch action.
-        int res = syscall_create(arg0,0);
+        int res = syscall_create(arg0,10);
         if(res == 0) {
             return;
         } else {

@@ -39,53 +39,94 @@
 #include "vm/tlb.h"
 #include "vm/pagetable.h"
 #include "kernel/thread.h"
+#include "kernel/interrupt.h"
 
 void tlb_modified_exception(void)
 {
+    kwrite("modified exception\n");
+    tlb_exception_state_t *state = NULL;
+    thread_table_t *thread;
+    _tlb_get_exception_state(state);
+    thread = thread_get_current_thread_entry();
+    if(thread->user_context->status & USERLAND_ENABLE_BIT){
+        // Acces violation? HOWTO!
+        kwrite("Access violation\n");
+        thread_finish();
+    }    
     KERNEL_PANIC("Unhandled TLB modified exception");
 }
 
 void tlb_load_exception(void)
 {
-    tlb_exception_state_t *state;
+    kwrite("load exception\n");
+    tlb_exception_state_t *state = NULL;
     thread_table_t *thread;
     uint32_t vpn2;
     uint32_t asid;
 
     _tlb_get_exception_state(state);
     thread = thread_get_current_thread_entry();
-    vpn = state->badvpn2;
+    vpn2 = state->badvpn2;
     asid = state->asid;
 
     for(int i = 0; i < PAGETABLE_ENTRIES; i++) {
         if(vpn2 == thread->pagetable->entries[i].VPN2 &&
            asid == thread->pagetable->entries[i].ASID) {
             //Insert in tlb
+            _tlb_write_random(&thread->pagetable->entries[i]);
             return;
         }
+    }
+    if(thread->user_context->status & USERLAND_ENABLE_BIT){
+        // Acces violation? HOWTO!
+        kwrite("Access violation\n");
+        thread_finish();
     }
     KERNEL_PANIC("Unhandled TLB load exception");
 }
 
 void tlb_store_exception(void)
 {
-    tlb_exception_state_t *state;
+    //interrupt_status_t intr_status;
+    //intr_status = _interrupt_disable();
+    //kwrite("store exception\n");
+    tlb_exception_state_t state;
     thread_table_t *thread;
     uint32_t vpn2;
     uint32_t asid;
 
-    _tlb_get_exception_state(state);
+    state = state;
+    _tlb_get_exception_state(&state);
     thread = thread_get_current_thread_entry();
-    vpn = state->badvpn2;
-    asid = state->asid;
+    vpn2 = state.badvpn2;
+    asid = state.asid;
 
     for(int i = 0; i < PAGETABLE_ENTRIES; i++) {
+        kprintf("I:%d\n",i);
+        kprintf("V0:%d\nV1:%d\n",
+                thread->pagetable->entries[i].V0,
+                thread->pagetable->entries[i].V1);
         if(vpn2 == thread->pagetable->entries[i].VPN2 &&
-           asid == thread->pagetable->entries[i].ASID) {
+           asid == thread->pagetable->entries[i].ASID &&
+           thread->pagetable->entries[i].V??) {
+            
             //Insert in tlb
+            kwrite("gonna to page write stuff\n");
+            _tlb_write_random(&thread->pagetable->entries[i]);
+
+            //_interrupt_set_state(intr_status);
             return;
         }
     }
+    if(thread->user_context->status & USERLAND_ENABLE_BIT){
+        // Acces violation? HOWTO!
+        kwrite("Access violation\n");
+        
+        // _interrupt_set_state(intr_status);
+        thread_finish();
+    }
+    
+    //_interrupt_set_state(intr_status);
     KERNEL_PANIC("Unhandled TLB store exception");
 }
 
