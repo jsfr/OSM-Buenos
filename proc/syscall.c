@@ -179,7 +179,7 @@ void syscall_handle(context_t *user_context)
     case SYSCALL_LIST:
         user_context->cpu_regs[MIPS_REGISTER_V0] = 
             vfs_getfiles((char*) user_context->cpu_regs[MIPS_REGISTER_A1],
-                         (char**)user_context->cpu_regs[MIPS_REGISTER_A2],
+                         (char(*)[])user_context->cpu_regs[MIPS_REGISTER_A2],
                                  user_context->cpu_regs[MIPS_REGISTER_A3]);
         break;
     default:

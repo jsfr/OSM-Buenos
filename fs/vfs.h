@@ -129,7 +129,7 @@ typedef struct fs_struct{
     int (*remove)(struct fs_struct *fs, char *filename);
 
     /* Function pointer to a function which lists the files on the given volume. */
-    int (*getfiles)(struct fs_struct *fs, char **buffer, int numfiles);
+    int (*getfiles)(struct fs_struct *fs, char buffer[*][*], int numfiles);
 
     /* Function pointer to a function which returns the number of free
        bytes in the filesystem. Pointer to this structure is given as
@@ -157,7 +157,7 @@ int vfs_write(openfile_t file, void *buffer, int datasize);
 int vfs_create(char *pathname, int size);
 int vfs_remove(char *pathname); 
 //used by ls, returns number of files actually on volume
-int vfs_getfiles(char* pathname, char **buffer, int numfiles);
+int vfs_getfiles(char* pathname, char buffer[*][20], int numfiles);
 int vfs_getfree(char *filesystem);
 
 #endif

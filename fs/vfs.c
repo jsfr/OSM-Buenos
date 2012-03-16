@@ -858,7 +858,7 @@ int vfs_remove(char *pathname)
  * @return an array of files
  */
 
-int vfs_getfiles(char *pathname, char **buffer, int numfiles) {
+int vfs_getfiles(char *pathname, char buffer[][20], int numfiles) {
     fs_t *fs = NULL;
 
     if (vfs_start_op() != VFS_OK)

@@ -789,7 +789,7 @@ int tfs_write(fs_t *fs, int fileid, void *buffer, int datasize, int offset)
  * @param numfiles Maximum number of files to read (usually size of buffer).
  * @return The actual number of files read from MD (can be lower than numfiles.)
  */
-int tfs_getfiles(fs_t *fs, char **buffer, int numfiles) {
+int tfs_getfiles(fs_t *fs, char buffer[][20], int numfiles) {
     tfs_t *tfs;
     gbd_request_t req;
     uint32_t i;
@@ -808,15 +808,12 @@ int tfs_getfiles(fs_t *fs, char **buffer, int numfiles) {
 	    semaphore_V(tfs->lock);
 	    return VFS_ERROR;
     }
-    kwrite("I FIAL\n");
     for(i=0;i < TFS_MAX_FILES && (int)i < numfiles;i++) {
         if (strlen(tfs->buffer_md[i].name) > 0) {
             files++;
-            kwrite("HERE?\n");
             stringcopy(buffer[i], tfs->buffer_md[i].name, 100);
         }
     }
-    kwrite("HERP\n");
     semaphore_V(tfs->lock);
     return files;
 }

@@ -45,7 +45,7 @@
 /* MARTINS SLAM HER!!!! */
 /* MARTINS SLAM HER!!!! */
 /* MARTINS SLAM HER!!!! */
-int syscall_list(const char* pathname, char** buffer, int numfiles) {
+int syscall_list(const char* pathname, char *buffer[], int numfiles) {
     return (int)_syscall(SYSCALL_LIST,
                          (uint32_t)pathname,
                          (uint32_t)buffer,
