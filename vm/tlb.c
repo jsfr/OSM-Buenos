@@ -38,6 +38,7 @@
 #include "kernel/assert.h"
 #include "vm/tlb.h"
 #include "vm/pagetable.h"
+#include "kernel/thread.h"
 
 void tlb_modified_exception(void)
 {
@@ -46,11 +47,45 @@ void tlb_modified_exception(void)
 
 void tlb_load_exception(void)
 {
+    tlb_exception_state_t *state;
+    thread_table_t *thread;
+    uint32_t vpn2;
+    uint32_t asid;
+
+    _tlb_get_exception_state(state);
+    thread = thread_get_current_thread_entry();
+    vpn = state->badvpn2;
+    asid = state->asid;
+
+    for(int i = 0; i < PAGETABLE_ENTRIES; i++) {
+        if(vpn2 == thread->pagetable->entries[i].VPN2 &&
+           asid == thread->pagetable->entries[i].ASID) {
+            //Insert in tlb
+            return;
+        }
+    }
     KERNEL_PANIC("Unhandled TLB load exception");
 }
 
 void tlb_store_exception(void)
 {
+    tlb_exception_state_t *state;
+    thread_table_t *thread;
+    uint32_t vpn2;
+    uint32_t asid;
+
+    _tlb_get_exception_state(state);
+    thread = thread_get_current_thread_entry();
+    vpn = state->badvpn2;
+    asid = state->asid;
+
+    for(int i = 0; i < PAGETABLE_ENTRIES; i++) {
+        if(vpn2 == thread->pagetable->entries[i].VPN2 &&
+           asid == thread->pagetable->entries[i].ASID) {
+            //Insert in tlb
+            return;
+        }
+    }
     KERNEL_PANIC("Unhandled TLB store exception");
 }
 
